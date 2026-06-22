@@ -8,9 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
+- Catching key inputs for hotkeys
 - Cache cleanup
 - Save as .ahk and launch
 - Add .ahk to shell:startup
+
+## [0.9.3] 2026-06-23
+
+### Changed
+
+- Revised version control
 
 ## [0.9.2] 2026-06-22
 
