@@ -6,7 +6,6 @@ All notable changes in this project will be documented in this file.
 
 ### Next
 
-- Reset configuration button.
 - Catching key inputs.
 
 ### Later
