@@ -140,6 +140,137 @@ test("complete AHK script survives export and import", () => {
   assert.deepEqual(parsed.remaps, input.remaps);
 });
 
+function roundTripHotkey(hotkey) {
+  const script = buildFullScript({
+    version: "v1.0.0-test",
+    hotkeys: [hotkey],
+    hotstrings: [],
+    remaps: [],
+  });
+  const parsed = parseAhkScript(script);
+
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.skippedCount, 0);
+  assert.equal(parsed.hotkeys.length, 1);
+  return parsed.hotkeys[0];
+}
+
+test("Send hotkeys survive round-trips with special text", () => {
+  const cases = [
+    {
+      value: "Plain text",
+      sendMode: "Input",
+    },
+    {
+      value: "{Enter} ^Ctrl !Alt +Shift #Win",
+      sendMode: "Event",
+    },
+    {
+      value: "Progress: 100% `n and a literal backtick: `",
+      sendMode: "Input",
+    },
+    {
+      value: "  leading and trailing spaces  ",
+      sendMode: "Input",
+    },
+    {
+      value: "\tTabbed text\t",
+      sendMode: "Event",
+    },
+    {
+      value: "First line\nSecond line\r\nThird line",
+      expectedValue: "First line\nSecond line\nThird line",
+      sendMode: "Input",
+    },
+    {
+      value: "Unicode: café, zażółć, 日本語, 😀",
+      sendMode: "Input",
+    },
+  ];
+
+  for (const [index, testCase] of cases.entries()) {
+    const input = {
+      prefix: `^${index + 1}`,
+      actionType: "send",
+      actionValue: testCase.value,
+      sendMode: testCase.sendMode,
+      comment: `Send case ${index + 1}`,
+    };
+
+    assert.deepEqual(roundTripHotkey(input), {
+      ...input,
+      actionValue: testCase.expectedValue ?? testCase.value,
+    });
+  }
+});
+
+test("Run hotkeys survive round-trips with Windows paths", () => {
+  const cases = [
+    "C:\\Windows\\notepad.exe",
+    "C:\\Program Files\\Example App\\app.exe",
+    "C:\\Apps\\release,stable\\app.exe",
+    "C:\\Tools\\back`tick\\app.exe",
+    'C:\\Example "Quoted"\\app.exe',
+  ];
+
+  for (const [index, path] of cases.entries()) {
+    const input = {
+      prefix: `#${index + 1}`,
+      actionType: "run",
+      actionValue: path,
+      sendMode: "Input",
+      comment: `Run case ${index + 1}`,
+    };
+
+    assert.deepEqual(roundTripHotkey(input), input);
+  }
+});
+
+test("URL hotkeys survive round-trips with query strings", () => {
+  const cases = [
+    "https://example.com",
+    "http://localhost:3000/path",
+    "https://example.com/search?q=hello%20world",
+    "https://example.com/items?first=one,second=two",
+    "https://example.com/?redirect=https%3A%2F%2Fopenai.com",
+    'https://example.com/?q="quoted"',
+  ];
+
+  for (const [index, url] of cases.entries()) {
+    const input = {
+      prefix: `!${index + 1}`,
+      actionType: "url",
+      actionValue: url,
+      sendMode: "Input",
+      comment: `URL case ${index + 1}`,
+    };
+
+    assert.deepEqual(roundTripHotkey(input), input);
+  }
+});
+
+test("Command hotkeys survive round-trips without changing raw commands", () => {
+  const cases = [
+    "shutdown /a",
+    "cmd.exe /c echo Hello",
+    "powershell.exe -NoProfile -Command Get-Date",
+    "ping 127.0.0.1 -n 3",
+    "rundll32.exe shell32.dll`,Control_RunDLL",
+  ];
+
+  for (const [index, command] of cases.entries()) {
+    const input = {
+      prefix: `+${index + 1}`,
+      actionType: "command",
+      actionValue: command,
+      sendMode: "Input",
+      comment: `Command case ${index + 1}`,
+    };
+
+    assert.deepEqual(roundTripHotkey(input), input);
+  }
+});
+
 test("Send actions preserve leading and trailing whitespace", () => {
   const input = {
     version: "v1.0.0-test",

@@ -1,21 +1,18 @@
 import { buildFullScript } from "./ahk/generator.js";
 import { parseAhkScript } from "./ahk/parser.js";
 import { createUserConfigStore } from "./config/user-config.js";
+import { createHotkeysController } from "./hotkeys/controller.js";
+import { createHotstringsController } from "./hotstrings/controller.js";
 import { createI18n, resolveSupportedLanguage } from "./i18n/index.js";
 import { findDuplicateHotstringIndex } from "./hotstrings/duplicates.js";
 import { getKeyboardLayoutMap, isSupportedKeyboardLayout } from "./keyboard/layouts.js";
-import {
-  buildPrefix,
-  isModifierActive,
-  parsePrefix,
-  toggleModifierInSet,
-} from "./keyboard/prefixes.js";
+import { createRemapsController } from "./remaps/controller.js";
 import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 
 // --- App version ---
 
-const AHKGEN_VERSION = "v1.0.0-alpha.3";
+const AHKGEN_VERSION = "v1.0.0-alpha.4";
 
 const { writeTextFile, readTextFile } = window.__TAURI__.fs;
 const { save, open } = window.__TAURI__.dialog;
@@ -30,93 +27,26 @@ let hotstrings = [];
 
 let currentMode = "hotkeys"; // "hotkeys" | "remap"
 
-// Hotkeys mode: visual keyboard state
-let selectedModifiers = new Set();
-let selectedKey = null;
-
-// Remap mode: visual keyboard state (two independent key selections: from / to)
-let remapActiveTarget = "from"; // "from" | "to"
-let remapFromMods = new Set();
-let remapFromKey = null;
-let remapToMods = new Set();
-let remapToKey = null;
-
-// Edit state: index of the entry currently being edited, or null if adding a new one
-let editingIndex = null; // for hotkeys
-let editingRemapIndex = null; // for remaps
-let editingHotstringIndex = null; // for hotstrings
-
 // --- DOM elements ---
 let modeTabs;
 let keyboardLayoutSelects;
 let languageSelect;
 let themeToggleCheckbox;
-let sendModeEventToggle, sendModeGroup;
 let tabBadgeHotkeys, tabBadgeHotstrings, tabBadgeRemap;
 let distinguishSidesToggles;
 let modeSectionHotkeys, modeSectionHotstrings, modeSectionRemap, modeSectionSettings;
 let listSectionHotkeys, listSectionHotstrings, listSectionRemap;
 
-let keyboardEl;
-let selectedHotkeyDisplay;
-let clearHotkeyBtn;
-let formTitle;
-let actionType;
-let actionValueGroup, actionValueLabel, actionValue, actionValueHint;
-let commentInput;
-let addBtn, cancelEditBtn, formError;
-let browseFileBtn;
-let hotkeyListEl, hotkeyCountEl;
-
-let hotstringTriggerInput, hotstringReplacementInput;
-let hotstringOptAuto, hotstringOptCase, hotstringOptInside, hotstringOptRaw;
-let hotstringCommentInput;
-let addHotstringBtn, cancelHotstringEditBtn, hotstringFormError;
-let hotstringFormTitle;
-let hotstringListEl, hotstringCountEl;
-
-let keyboardRemapEl;
-let remapTargetFromBtn, remapTargetToBtn;
-let remapFromDisplay, remapToDisplay;
-let remapCommentInput;
-let addRemapBtn, cancelRemapEditBtn, remapFormError;
-let remapFormTitle;
-let remapListEl, remapCountEl;
-
 let scriptPreviewEl;
 let scriptPreviewSection;
 let copyBtn, saveBtn, openFileBtn, actionStatusEl;
 let resetConfigBtn, settingsStatusEl;
-let themeController, titlebarController;
+let hotkeysController, hotstringsController, remapsController, themeController, titlebarController;
 
 // --- Localization ---
 
 const i18n = createI18n();
 const t = (key, values = {}) => i18n.t(key, values);
-
-// Field configuration for each action type (labels, placeholders, hints)
-const ACTION_CONFIG = {
-  send: {
-    labelKey: "action.send.label",
-    placeholderKey: "action.send.placeholder",
-    hintKey: "action.send.hint",
-  },
-  run: {
-    labelKey: "action.run.label",
-    placeholderKey: "action.run.placeholder",
-    hintKey: "action.run.hint",
-  },
-  url: {
-    labelKey: "action.url.label",
-    placeholderKey: "action.url.placeholder",
-    hintKey: "action.url.hint",
-  },
-  command: {
-    labelKey: "action.command.label",
-    placeholderKey: "action.command.placeholder",
-    hintKey: "action.command.hint",
-  },
-};
 
 const userConfigStore = createUserConfigStore({
   invoke,
@@ -147,31 +77,15 @@ function applyTranslations() {
   i18n.applyToDocument(document);
   if (languageSelect) languageSelect.value = i18n.getLanguage();
 
-  if (actionType) handleActionTypeChange();
   updateFormModeLabels();
-  if (remapFromDisplay && remapToDisplay) updateRemapDisplays();
+  remapsController?.updateDisplays();
   titlebarController?.updateMaximizeLabel();
 }
 
 function updateFormModeLabels() {
-  if (formTitle) {
-    formTitle.textContent = t(editingIndex === null ? "form.hotkey.new" : "form.hotkey.edit");
-  }
-  if (addBtn) {
-    addBtn.textContent = t(editingIndex === null ? "button.addHotkey" : "button.saveChanges");
-  }
-  if (hotstringFormTitle) {
-    hotstringFormTitle.textContent = t(editingHotstringIndex === null ? "form.hotstring.new" : "form.hotstring.edit");
-  }
-  if (addHotstringBtn) {
-    addHotstringBtn.textContent = t(editingHotstringIndex === null ? "button.addHotstring" : "button.saveChanges");
-  }
-  if (remapFormTitle) {
-    remapFormTitle.textContent = t(editingRemapIndex === null ? "form.remap.new" : "form.remap.edit");
-  }
-  if (addRemapBtn) {
-    addRemapBtn.textContent = t(editingRemapIndex === null ? "button.addRemap" : "button.saveChanges");
-  }
+  hotkeysController?.updateTranslations();
+  hotstringsController?.updateLabels();
+  remapsController?.updateLabels();
 }
 
 // Whether to distinguish left/right variants of Ctrl, Shift, Alt, Win (global setting)
@@ -187,21 +101,8 @@ let distinguishSides = false;
 // would actually press on that layout.
 function applyKeyboardLayout(layout) {
   const map = getKeyboardLayoutMap(layout);
-
-  [keyboardEl, keyboardRemapEl].forEach((kb) => {
-    if (!kb) return;
-    kb.querySelectorAll(".kb-key:not(.kb-modifier)").forEach((btn) => {
-      const baseKey = btn.dataset.baseKey || btn.dataset.key; // remember the original QWERTY key
-      if (!btn.dataset.baseKey) btn.dataset.baseKey = baseKey;
-
-      // Only single-letter keys are affected by layout swaps (numbers, F-keys, etc. never move)
-      if (baseKey.length === 1 && /[a-z]/i.test(baseKey)) {
-        const mapped = map[baseKey] || baseKey;
-        btn.dataset.key = mapped;
-        btn.textContent = mapped.toUpperCase();
-      }
-    });
-  });
+  hotkeysController?.applyKeyboardLayout(map);
+  remapsController?.applyKeyboardLayout(map);
 }
 
 function saveKeyboardLayoutPreference(layout) {
@@ -222,25 +123,8 @@ function saveThemePreference(theme) {
 }
 
 function updateModifierLabels() {
-  [keyboardEl, keyboardRemapEl].forEach((kb) => {
-    if (!kb) return;
-    kb.querySelectorAll(".kb-modifier").forEach((btn) => {
-      const side = btn.dataset.side; // "L" | "R"
-      const base = btn.dataset.base; // "Ctrl" | "Alt" | "Shift" | "Win" | "AltGr"
-
-      // Only Ctrl and Shift get an L/R label change. Alt keeps its plain label
-      // (LAlt vs AltGr are different physical keys, so we don't want "L Alt" suggesting
-      // it's somehow related to AltGr). Win and AltGr never change their label either.
-      const distinguishableLabels = ["Ctrl", "Shift"];
-
-      if (!distinguishableLabels.includes(base)) {
-        btn.textContent = base;
-        return;
-      }
-
-      btn.textContent = distinguishSides ? `${side} ${base}` : base;
-    });
-  });
+  hotkeysController?.updateModifierLabels();
+  remapsController?.updateModifierLabels();
 }
 
 function setDistinguishSides(value) {
@@ -252,312 +136,13 @@ function setDistinguishSides(value) {
   // Only clear the *modifier* selections on both keyboards (Ctrl/Alt/Shift/Win/AltGr) - switching
   // this setting changes what their symbols/labels mean. The main key (e.g. "j") is unaffected
   // by this setting, so we leave it selected.
-  selectedModifiers.clear();
-  remapFromMods.clear();
-  remapToMods.clear();
+  hotkeysController.clearModifiers();
+  remapsController.clearModifiers();
 
   updateModifierLabels();
-  updateKeyboardVisuals();
-  updateSelectedHotkeyDisplay();
-  updateRemapKeyboardVisuals();
-  updateRemapDisplays();
-}
-
-// --- Hotkeys mode: visual keyboard logic ---
-
-function toggleModifier(modKey) {
-  toggleModifierInSet(selectedModifiers, modKey, distinguishSides);
-  updateKeyboardVisuals();
-  updateSelectedHotkeyDisplay();
-}
-
-function selectKey(keyName) {
-  // Clicking the already-selected key deselects it; clicking a different key replaces the selection.
-  selectedKey = selectedKey === keyName ? null : keyName;
-  updateKeyboardVisuals();
-  updateSelectedHotkeyDisplay();
-}
-
-function clearHotkeySelection() {
-  selectedModifiers.clear();
-  selectedKey = null;
-  updateKeyboardVisuals();
-  updateSelectedHotkeyDisplay();
-}
-
-function updateKeyboardVisuals() {
-  const buttons = keyboardEl.querySelectorAll(".kb-key");
-  buttons.forEach((btn) => {
-    const key = btn.dataset.key;
-    const isModifier = btn.classList.contains("kb-modifier");
-    if (isModifier) {
-      btn.classList.toggle(
-        "active",
-        isModifierActive(key, btn.dataset.base, selectedModifiers, distinguishSides)
-      );
-    } else {
-      btn.classList.toggle("active", selectedKey === key);
-    }
-  });
-}
-
-function buildHotkeyPrefix() {
-  return buildPrefix(selectedModifiers, selectedKey, distinguishSides);
-}
-
-function updateSelectedHotkeyDisplay() {
-  selectedHotkeyDisplay.value = buildHotkeyPrefix();
-}
-
-// --- Remap mode: visual keyboard logic ---
-// The same physical keyboard is used for both "from" and "to" - remapActiveTarget
-// decides which selection set gets updated when a key is clicked.
-
-function setRemapActiveTarget(target) {
-  remapActiveTarget = target;
-  remapTargetFromBtn.classList.toggle("active", target === "from");
-  remapTargetToBtn.classList.toggle("active", target === "to");
-  updateRemapKeyboardVisuals();
-}
-
-function toggleRemapModifier(modKey) {
-  const mods = remapActiveTarget === "from" ? remapFromMods : remapToMods;
-  toggleModifierInSet(mods, modKey, distinguishSides);
-  updateRemapKeyboardVisuals();
-  updateRemapDisplays();
-}
-
-function selectRemapKey(keyName) {
-  if (remapActiveTarget === "from") {
-    remapFromKey = remapFromKey === keyName ? null : keyName;
-  } else {
-    remapToKey = remapToKey === keyName ? null : keyName;
-  }
-  updateRemapKeyboardVisuals();
-  updateRemapDisplays();
-}
-
-function updateRemapKeyboardVisuals() {
-  const mods = remapActiveTarget === "from" ? remapFromMods : remapToMods;
-  const key = remapActiveTarget === "from" ? remapFromKey : remapToKey;
-
-  const buttons = keyboardRemapEl.querySelectorAll(".kb-key");
-  buttons.forEach((btn) => {
-    const k = btn.dataset.key;
-    const isModifier = btn.classList.contains("kb-modifier");
-    if (isModifier) {
-      btn.classList.toggle(
-        "active",
-        isModifierActive(k, btn.dataset.base, mods, distinguishSides)
-      );
-    } else {
-      btn.classList.toggle("active", key === k);
-    }
-  });
-}
-
-function updateRemapDisplays() {
-  const fromPrefix = buildPrefix(remapFromMods, remapFromKey, distinguishSides);
-  const toPrefix = buildPrefix(remapToMods, remapToKey, distinguishSides);
-  remapFromDisplay.textContent = fromPrefix || t("remap.pickKey");
-  remapToDisplay.textContent = toPrefix || t("remap.pickKey");
-}
-
-function clearRemapSelection() {
-  remapFromMods = new Set();
-  remapFromKey = null;
-  remapToMods = new Set();
-  remapToKey = null;
-  setRemapActiveTarget("from");
-  updateRemapDisplays();
 }
 
 // AHK generation and parsing live in pure modules under src/ahk.
-
-// --- Rendering: Hotkeys list ---
-
-function renderHotkeyList() {
-  hotkeyCountEl.textContent = hotkeys.length;
-
-  if (hotkeys.length === 0) {
-    hotkeyListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.hotkeys"))}</li>`;
-    return;
-  }
-
-  hotkeyListEl.innerHTML = hotkeys
-    .map((hk, index) => {
-      const actionLabel = t(ACTION_CONFIG[hk.actionType].labelKey);
-      const editingClass = index === editingIndex ? " editing" : "";
-      const sendModeTag =
-        hk.actionType === "send" && hk.sendMode && hk.sendMode !== "Input"
-          ? ` <span class="hotstring-options">[${escapeHtml(hk.sendMode)}]</span>`
-          : "";
-      const description = hk.comment
-        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(hk.comment)}</strong></span>`
-        : `<span class="hotkey-desc">${actionLabel}: <strong>${escapeHtml(hk.actionValue)}</strong>${sendModeTag}</span>`;
-      return `
-        <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}" tabindex="0">
-          <div class="hotkey-item-main">
-            <span class="entry-prefix">
-              <span class="hotkey-badge">${escapeHtml(hk.prefix)}</span>
-            </span>
-            ${description}
-          </div>
-          <div class="hotkey-item-actions">
-            <button class="btn-remove" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
-          </div>
-        </li>
-      `;
-    })
-    .join("");
-
-  setupEditableEntries(hotkeyListEl, (index) => {
-    if (editingIndex === index) {
-      cancelEdit();
-    } else {
-      startEdit(index);
-    }
-  });
-
-  hotkeyListEl.querySelectorAll(".btn-remove").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      const removingLastEntry = hotkeys.length === 1;
-      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
-        hotkeys.splice(idx, 1);
-        if (editingIndex !== null) cancelEdit();
-        renderAll();
-        if (removingLastEntry) animateEmptyState(hotkeyListEl);
-      }, removingLastEntry);
-    });
-  });
-
-}
-
-// --- Rendering: Remaps list ---
-
-function renderRemapList() {
-  remapCountEl.textContent = remaps.length;
-
-  if (remaps.length === 0) {
-    remapListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.remaps"))}</li>`;
-    return;
-  }
-
-  remapListEl.innerHTML = remaps
-    .map((rm, index) => {
-      const editingClass = index === editingRemapIndex ? " editing" : "";
-      const entryName = rm.comment
-        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(rm.comment)}</strong></span>`
-        : "";
-      return `
-        <li class="hotkey-item hotkey-item-expandable remap-entry${editingClass}" data-index="${index}" tabindex="0">
-          <div class="hotkey-item-main">
-            <span class="entry-prefix">
-              <span class="hotkey-badge">${escapeHtml(rm.fromPrefix)}</span>
-              <span class="remap-arrow-inline">&rarr;</span>
-              <span class="hotkey-badge">${escapeHtml(rm.toPrefix)}</span>
-            </span>
-            ${entryName}
-          </div>
-          <div class="hotkey-item-actions">
-            <button class="btn-remove-remap" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
-          </div>
-        </li>
-      `;
-    })
-    .join("");
-
-  setupEditableEntries(remapListEl, (index) => {
-    if (editingRemapIndex === index) {
-      cancelRemapEdit();
-    } else {
-      startRemapEdit(index);
-    }
-  });
-
-  remapListEl.querySelectorAll(".btn-remove-remap").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      const removingLastEntry = remaps.length === 1;
-      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
-        remaps.splice(idx, 1);
-        if (editingRemapIndex !== null) cancelRemapEdit();
-        renderAll();
-        if (removingLastEntry) animateEmptyState(remapListEl);
-      }, removingLastEntry);
-    });
-  });
-
-}
-
-// --- Rendering: Hotstrings list ---
-
-function renderHotstringList() {
-  hotstringCountEl.textContent = hotstrings.length;
-
-  if (hotstrings.length === 0) {
-    hotstringListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.hotstrings"))}</li>`;
-    return;
-  }
-
-  hotstringListEl.innerHTML = hotstrings
-    .map((hs, index) => {
-      const editingClass = index === editingHotstringIndex ? " editing" : "";
-      const optionTags = [];
-      if (hs.autoReplace) optionTags.push("*");
-      if (hs.caseSensitive) optionTags.push("C");
-      if (hs.insideWord) optionTags.push("?");
-      if (hs.rawText) optionTags.push("R");
-      const optionsLabel = optionTags.length > 0 ? ` <span class="hotstring-options">[${optionTags.join(" ")}]</span>` : "";
-      const description = hs.comment
-        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(hs.comment)}</strong></span>`
-        : `
-            <span class="hotkey-desc"><strong>${escapeHtml(hs.replacement)}</strong>${optionsLabel}</span>
-          `;
-
-      return `
-        <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}" tabindex="0">
-          <div class="hotkey-item-main">
-            <span class="entry-prefix">
-              <span class="hotkey-badge">${escapeHtml(hs.trigger)}</span>
-              ${hs.comment ? "" : '<span class="remap-arrow-inline">&rarr;</span>'}
-            </span>
-            ${description}
-          </div>
-          <div class="hotkey-item-actions">
-            <button class="btn-remove-hotstring" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
-          </div>
-        </li>
-      `;
-    })
-    .join("");
-
-  setupEditableEntries(hotstringListEl, (index) => {
-    if (editingHotstringIndex === index) {
-      cancelHotstringEdit();
-    } else {
-      startHotstringEdit(index);
-    }
-  });
-
-  hotstringListEl.querySelectorAll(".btn-remove-hotstring").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      const removingLastEntry = hotstrings.length === 1;
-      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
-        hotstrings.splice(idx, 1);
-        if (editingHotstringIndex !== null) cancelHotstringEdit();
-        renderAll();
-        if (removingLastEntry) animateEmptyState(hotstringListEl);
-      }, removingLastEntry);
-    });
-  });
-
-}
 
 function escapeHtml(str) {
   const div = document.createElement("div");
@@ -588,269 +173,11 @@ function setTabBadge(el, count) {
 }
 
 function renderAll() {
-  renderHotkeyList();
-  renderHotstringList();
-  renderRemapList();
+  hotkeysController.render();
+  hotstringsController.render();
+  remapsController.render();
   renderScriptPreview();
   updateTabBadges();
-}
-
-// --- Hotkeys mode: edit logic ---
-
-function startEdit(index) {
-  const hk = hotkeys[index];
-  editingIndex = index;
-
-  const { mods, key } = parsePrefix(hk.prefix);
-  selectedModifiers = mods;
-  selectedKey = key;
-  updateKeyboardVisuals();
-  updateSelectedHotkeyDisplay();
-
-  actionType.value = hk.actionType;
-  handleActionTypeChange();
-  actionValue.value = hk.actionValue;
-  sendModeEventToggle.checked = hk.sendMode === "Event";
-  commentInput.value = hk.comment || "";
-
-  formTitle.textContent = t("form.hotkey.edit");
-  addBtn.textContent = t("button.saveChanges");
-  cancelEditBtn.classList.remove("hidden");
-  clearFormError();
-
-  setEditingEntry(hotkeyListEl, index);
-}
-
-function cancelEdit() {
-  const cancelledIndex = editingIndex;
-  editingIndex = null;
-  clearHotkeySelection();
-  actionType.value = "send";
-  handleActionTypeChange();
-  actionValue.value = "";
-  sendModeEventToggle.checked = false;
-  commentInput.value = "";
-
-  formTitle.textContent = t("form.hotkey.new");
-  addBtn.textContent = t("button.addHotkey");
-  cancelEditBtn.classList.add("hidden");
-  clearFormError();
-
-  clearEditingEntry(hotkeyListEl, cancelledIndex);
-}
-
-function clearFormError() {
-  formError.textContent = "";
-}
-
-function setFormError(msg) {
-  formError.textContent = msg;
-}
-
-function handleAddOrSaveHotkey() {
-  clearFormError();
-
-  const prefix = buildHotkeyPrefix();
-  const type = actionType.value;
-  const rawValue = actionValue.value;
-  const value = actionType.value === "send" ? rawValue : rawValue.trim();
-  const comment = commentInput.value.trim();
-  const sendMode = type === "send" && sendModeEventToggle.checked ? "Event" : "Input";
-
-  if (!selectedKey) {
-    setFormError(t("error.noHotkeyKey"));
-    return;
-  }
-
-  if (value.length === 0) {
-    setFormError(t("error.emptyAction"));
-    return;
-  }
-
-  const duplicateIndex = hotkeys.findIndex((hk) => hk.prefix === prefix);
-  const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingIndex;
-  if (isDuplicate) {
-    setFormError(t("error.duplicateHotkey", { prefix }));
-    return;
-  }
-
-  const newEntry = { prefix, actionType: type, actionValue: value, sendMode, comment };
-
-  let addedIndex = null;
-  if (editingIndex !== null) {
-    hotkeys[editingIndex] = newEntry;
-    cancelEdit();
-  } else {
-    hotkeys.push(newEntry);
-    addedIndex = hotkeys.length - 1;
-    clearHotkeySelection();
-    actionValue.value = "";
-    sendModeEventToggle.checked = false;
-    commentInput.value = "";
-  }
-
-  renderAll();
-  if (addedIndex !== null) animateEntryAddition(hotkeyListEl, addedIndex, addedIndex === 0);
-}
-
-function handleActionTypeChange() {
-  const config = ACTION_CONFIG[actionType.value];
-  const isSendText = actionType.value === "send";
-
-  // "Send text" needs a tall, multi-line textarea (for {Enter}/line breaks via Shift+Enter).
-  // Every other action type is always a single short value (a path, a URL, a command),
-  // so it gets a real single-line <input> instead - swapping the actual element is cleaner
-  // than faking single-line behavior with CSS on a textarea.
-  const currentlyTextarea = actionValue.tagName === "TEXTAREA";
-  if (isSendText !== currentlyTextarea) {
-    const oldValue = actionValue.value;
-    const newEl = document.createElement(isSendText ? "textarea" : "input");
-    newEl.id = "action-value";
-    if (!isSendText) newEl.type = "text";
-    if (isSendText) newEl.rows = 4;
-    newEl.value = oldValue;
-    actionValue.replaceWith(newEl);
-    actionValue = newEl;
-  }
-
-  actionValueLabel.textContent = t(config.labelKey);
-  actionValue.placeholder = t(config.placeholderKey);
-  actionValueHint.textContent = t(config.hintKey);
-  browseFileBtn.classList.toggle("hidden", actionType.value !== "run");
-  sendModeGroup.classList.toggle("hidden", !isSendText);
-}
-
-// --- Remap mode: edit logic ---
-
-function startRemapEdit(index) {
-  const rm = remaps[index];
-  editingRemapIndex = index;
-
-  const from = parsePrefix(rm.fromPrefix);
-  const to = parsePrefix(rm.toPrefix);
-  remapFromMods = from.mods;
-  remapFromKey = from.key;
-  remapToMods = to.mods;
-  remapToKey = to.key;
-
-  setRemapActiveTarget("from");
-  updateRemapDisplays();
-
-  remapCommentInput.value = rm.comment || "";
-
-  remapFormTitle.textContent = t("form.remap.edit");
-  addRemapBtn.textContent = t("button.saveChanges");
-  cancelRemapEditBtn.classList.remove("hidden");
-  clearRemapFormError();
-
-  setEditingEntry(remapListEl, index);
-}
-
-function cancelRemapEdit() {
-  const cancelledIndex = editingRemapIndex;
-  editingRemapIndex = null;
-  clearRemapSelection();
-  remapCommentInput.value = "";
-
-  remapFormTitle.textContent = t("form.remap.new");
-  addRemapBtn.textContent = t("button.addRemap");
-  cancelRemapEditBtn.classList.add("hidden");
-  clearRemapFormError();
-
-  clearEditingEntry(remapListEl, cancelledIndex);
-}
-
-function clearRemapFormError() {
-  remapFormError.textContent = "";
-}
-
-function setRemapFormError(msg) {
-  remapFormError.textContent = msg;
-}
-
-function handleAddOrSaveRemap() {
-  clearRemapFormError();
-
-  const fromPrefix = buildPrefix(remapFromMods, remapFromKey, distinguishSides);
-  const toPrefix = buildPrefix(remapToMods, remapToKey, distinguishSides);
-  const comment = remapCommentInput.value.trim();
-
-  if (!remapFromKey) {
-    setRemapFormError(t("error.remapMissingFrom"));
-    return;
-  }
-  if (!remapToKey) {
-    setRemapFormError(t("error.remapMissingTo"));
-    return;
-  }
-  if (fromPrefix === toPrefix) {
-    setRemapFormError(t("error.remapSame"));
-    return;
-  }
-
-  const duplicateIndex = remaps.findIndex((rm) => rm.fromPrefix === fromPrefix);
-  const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingRemapIndex;
-  if (isDuplicate) {
-    setRemapFormError(t("error.duplicateRemap", { prefix: fromPrefix }));
-    return;
-  }
-
-  const newEntry = { fromPrefix, toPrefix, comment };
-
-  let addedIndex = null;
-  if (editingRemapIndex !== null) {
-    remaps[editingRemapIndex] = newEntry;
-    cancelRemapEdit();
-  } else {
-    remaps.push(newEntry);
-    addedIndex = remaps.length - 1;
-    clearRemapSelection();
-    remapCommentInput.value = "";
-  }
-
-  renderAll();
-  if (addedIndex !== null) animateEntryAddition(remapListEl, addedIndex, addedIndex === 0);
-}
-
-// --- Hotstrings mode: edit logic ---
-
-function startHotstringEdit(index) {
-  const hs = hotstrings[index];
-  editingHotstringIndex = index;
-
-  hotstringTriggerInput.value = hs.trigger;
-  hotstringReplacementInput.value = hs.replacement;
-  hotstringOptAuto.checked = hs.autoReplace;
-  hotstringOptCase.checked = hs.caseSensitive;
-  hotstringOptInside.checked = hs.insideWord;
-  hotstringOptRaw.checked = hs.rawText;
-  hotstringCommentInput.value = hs.comment || "";
-
-  hotstringFormTitle.textContent = t("form.hotstring.edit");
-  addHotstringBtn.textContent = t("button.saveChanges");
-  cancelHotstringEditBtn.classList.remove("hidden");
-  clearHotstringFormError();
-
-  setEditingEntry(hotstringListEl, index);
-}
-
-function cancelHotstringEdit() {
-  const cancelledIndex = editingHotstringIndex;
-  editingHotstringIndex = null;
-  hotstringTriggerInput.value = "";
-  hotstringReplacementInput.value = "";
-  hotstringOptAuto.checked = false;
-  hotstringOptCase.checked = false;
-  hotstringOptInside.checked = false;
-  hotstringOptRaw.checked = false;
-  hotstringCommentInput.value = "";
-
-  hotstringFormTitle.textContent = t("form.hotstring.new");
-  addHotstringBtn.textContent = t("button.addHotstring");
-  cancelHotstringEditBtn.classList.add("hidden");
-  clearHotstringFormError();
-
-  clearEditingEntry(hotstringListEl, cancelledIndex);
 }
 
 function setupEditableEntries(listEl, handleEdit) {
@@ -1055,72 +382,6 @@ function collapseEntry(item) {
   });
 }
 
-function clearHotstringFormError() {
-  hotstringFormError.textContent = "";
-}
-
-function setHotstringFormError(msg) {
-  hotstringFormError.textContent = msg;
-}
-
-function handleAddOrSaveHotstring() {
-  clearHotstringFormError();
-
-  const trigger = hotstringTriggerInput.value.trim();
-  const replacement = hotstringReplacementInput.value;
-  const autoReplace = hotstringOptAuto.checked;
-  const caseSensitive = hotstringOptCase.checked;
-  const insideWord = hotstringOptInside.checked;
-  const rawText = hotstringOptRaw.checked;
-  const comment = hotstringCommentInput.value.trim();
-
-  if (trigger.length === 0) {
-    setHotstringFormError(t("error.hotstringMissingTrigger"));
-    return;
-  }
-  if (/\s/.test(trigger)) {
-    setHotstringFormError(t("error.hotstringTriggerSpaces"));
-    return;
-  }
-  if (replacement.length === 0) {
-    setHotstringFormError(t("error.hotstringMissingReplacement"));
-    return;
-  }
-
-  // Case-insensitive triggers collide regardless of letter case. A case-sensitive
-  // variant remains a separate hotstring and may coexist with an insensitive one.
-  const duplicateIndex = findDuplicateHotstringIndex(hotstrings, {
-    trigger,
-    caseSensitive,
-  });
-  const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingHotstringIndex;
-  if (isDuplicate) {
-    setHotstringFormError(t("error.duplicateHotstring", { trigger }));
-    return;
-  }
-
-  const newEntry = { trigger, replacement, autoReplace, caseSensitive, insideWord, rawText, comment };
-
-  let addedIndex = null;
-  if (editingHotstringIndex !== null) {
-    hotstrings[editingHotstringIndex] = newEntry;
-    cancelHotstringEdit();
-  } else {
-    hotstrings.push(newEntry);
-    addedIndex = hotstrings.length - 1;
-    hotstringTriggerInput.value = "";
-    hotstringReplacementInput.value = "";
-    hotstringOptAuto.checked = false;
-    hotstringOptCase.checked = false;
-    hotstringOptInside.checked = false;
-    hotstringOptRaw.checked = false;
-    hotstringCommentInput.value = "";
-  }
-
-  renderAll();
-  if (addedIndex !== null) animateEntryAddition(hotstringListEl, addedIndex, addedIndex === 0);
-}
-
 // --- Mode switching ---
 
 function switchMode(mode) {
@@ -1141,11 +402,11 @@ function switchMode(mode) {
 
   // Leaving a tab resets its form/keyboard selection (and cancels any in-progress edit there),
   // so coming back later always starts from a clean slate instead of stale state.
-  if (editingIndex !== null) cancelEdit();
-  if (editingRemapIndex !== null) cancelRemapEdit();
-  if (editingHotstringIndex !== null) cancelHotstringEdit();
-  clearHotkeySelection();
-  clearRemapSelection();
+  if (hotkeysController.isEditing()) hotkeysController.cancelEdit();
+  if (remapsController.isEditing()) remapsController.cancelEdit();
+  if (hotstringsController.isEditing()) hotstringsController.cancelEdit();
+  hotkeysController.clearSelection();
+  remapsController.clearSelection();
 }
 
 // --- Status messages ---
@@ -1272,21 +533,6 @@ async function handleOpenFile() {
   }
 }
 
-async function handleBrowseFile() {
-  try {
-    const filePath = await open({
-      multiple: false,
-      // No extension filter here - the target could be any executable, document, or file.
-    });
-
-    if (!filePath) return; // user clicked "Cancel"
-
-    actionValue.value = filePath;
-  } catch (err) {
-    setStatus(t("status.browseError", { error: err }), true);
-  }
-}
-
 function handleKeyboardLayoutChange(event) {
   const layout = event.currentTarget.value;
   keyboardLayoutSelects.forEach((select) => {
@@ -1296,8 +542,8 @@ function handleKeyboardLayoutChange(event) {
   saveKeyboardLayoutPreference(layout);
 
   // Clear any in-progress key selection, since the key positions just changed underneath it
-  clearHotkeySelection();
-  clearRemapSelection();
+  hotkeysController.clearSelection();
+  remapsController.clearSelection();
 }
 
 function handleLanguageChange() {
@@ -1335,8 +581,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   keyboardLayoutSelects = document.querySelectorAll(".keyboard-layout-select");
   languageSelect = document.querySelector("#language-select");
   themeToggleCheckbox = document.querySelector("#theme-toggle-checkbox");
-  sendModeEventToggle = document.querySelector("#send-mode-event-toggle");
-  sendModeGroup = document.querySelector("#send-mode-group");
   modeSectionHotkeys = document.querySelector("#mode-section-hotkeys");
   modeSectionHotstrings = document.querySelector("#mode-section-hotstrings");
   modeSectionRemap = document.querySelector("#mode-section-remap");
@@ -1344,54 +588,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   listSectionHotkeys = document.querySelector("#list-section-hotkeys");
   listSectionHotstrings = document.querySelector("#list-section-hotstrings");
   listSectionRemap = document.querySelector("#list-section-remap");
-
-  keyboardEl = document.querySelector("#keyboard");
-  selectedHotkeyDisplay = document.querySelector("#selected-hotkey-display");
-  clearHotkeyBtn = document.querySelector("#clear-hotkey-btn");
-  formTitle = document.querySelector("#form-title");
-
-  actionType = document.querySelector("#action-type");
-  actionValueGroup = document.querySelector("#action-value-group");
-  actionValueLabel = document.querySelector("#action-value-label");
-  actionValue = document.querySelector("#action-value");
-  actionValueHint = document.querySelector("#action-value-hint");
-  browseFileBtn = document.querySelector("#browse-file-btn");
-
-  commentInput = document.querySelector("#comment-input");
-
-  addBtn = document.querySelector("#add-hotkey-btn");
-  cancelEditBtn = document.querySelector("#cancel-edit-btn");
-  formError = document.querySelector("#form-error");
-
-  hotkeyListEl = document.querySelector("#hotkey-list");
-  hotkeyCountEl = document.querySelector("#hotkey-count");
-
-  hotstringTriggerInput = document.querySelector("#hotstring-trigger-input");
-  hotstringReplacementInput = document.querySelector("#hotstring-replacement-input");
-  hotstringOptAuto = document.querySelector("#hotstring-opt-auto");
-  hotstringOptCase = document.querySelector("#hotstring-opt-case");
-  hotstringOptInside = document.querySelector("#hotstring-opt-inside");
-  hotstringOptRaw = document.querySelector("#hotstring-opt-raw");
-  hotstringCommentInput = document.querySelector("#hotstring-comment-input");
-  addHotstringBtn = document.querySelector("#add-hotstring-btn");
-  cancelHotstringEditBtn = document.querySelector("#cancel-hotstring-edit-btn");
-  hotstringFormError = document.querySelector("#hotstring-form-error");
-  hotstringFormTitle = document.querySelector("#hotstring-form-title");
-  hotstringListEl = document.querySelector("#hotstring-list");
-  hotstringCountEl = document.querySelector("#hotstring-count");
-
-  keyboardRemapEl = document.querySelector("#keyboard-remap");
-  remapTargetFromBtn = document.querySelector("#remap-target-from");
-  remapTargetToBtn = document.querySelector("#remap-target-to");
-  remapFromDisplay = document.querySelector("#remap-from-display");
-  remapToDisplay = document.querySelector("#remap-to-display");
-  remapCommentInput = document.querySelector("#remap-comment-input");
-  addRemapBtn = document.querySelector("#add-remap-btn");
-  cancelRemapEditBtn = document.querySelector("#cancel-remap-edit-btn");
-  remapFormError = document.querySelector("#remap-form-error");
-  remapFormTitle = document.querySelector("#remap-form-title");
-  remapListEl = document.querySelector("#remap-list");
-  remapCountEl = document.querySelector("#remap-count");
 
   scriptPreviewEl = document.querySelector("#script-preview");
   scriptPreviewSection = document.querySelector("#script-preview-section");
@@ -1415,43 +611,78 @@ window.addEventListener("DOMContentLoaded", async () => {
     appWindow: getCurrentWindow(),
     t,
   });
-
-  // Hotkeys mode keyboard
-  keyboardEl.querySelectorAll(".kb-key").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.key;
-      if (btn.classList.contains("kb-modifier")) {
-        toggleModifier(key);
-      } else {
-        selectKey(key);
-      }
-    });
+  hotkeysController = createHotkeysController({
+    documentLike: document,
+    entries: hotkeys,
+    t,
+    escapeHtml,
+    getDistinguishSides: () => distinguishSides,
+    editableEntries: {
+      setup: setupEditableEntries,
+      setEditing: setEditingEntry,
+      clearEditing: clearEditingEntry,
+    },
+    animations: {
+      add: animateEntryAddition,
+      remove: animateEntryRemoval,
+      empty: animateEmptyState,
+    },
+    browseForFile: () =>
+      open({
+        multiple: false,
+      }),
+    onBrowseError: (error) => {
+      setStatus(t("status.browseError", { error }), true);
+    },
+    onChange: () => {
+      hotkeysController.render();
+      renderScriptPreview();
+      updateTabBadges();
+    },
   });
-  clearHotkeyBtn.addEventListener("click", clearHotkeySelection);
-  addBtn.addEventListener("click", handleAddOrSaveHotkey);
-  cancelEditBtn.addEventListener("click", cancelEdit);
-  actionType.addEventListener("change", handleActionTypeChange);
-  browseFileBtn.addEventListener("click", handleBrowseFile);
-
-  // Hotstrings mode
-  addHotstringBtn.addEventListener("click", handleAddOrSaveHotstring);
-  cancelHotstringEditBtn.addEventListener("click", cancelHotstringEdit);
-
-  // Remap mode keyboard
-  keyboardRemapEl.querySelectorAll(".kb-key").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.key;
-      if (btn.classList.contains("kb-modifier")) {
-        toggleRemapModifier(key);
-      } else {
-        selectRemapKey(key);
-      }
-    });
+  hotstringsController = createHotstringsController({
+    documentLike: document,
+    entries: hotstrings,
+    t,
+    escapeHtml,
+    editableEntries: {
+      setup: setupEditableEntries,
+      setEditing: setEditingEntry,
+      clearEditing: clearEditingEntry,
+    },
+    animations: {
+      add: animateEntryAddition,
+      remove: animateEntryRemoval,
+      empty: animateEmptyState,
+    },
+    onChange: () => {
+      hotstringsController.render();
+      renderScriptPreview();
+      updateTabBadges();
+    },
   });
-  remapTargetFromBtn.addEventListener("click", () => setRemapActiveTarget("from"));
-  remapTargetToBtn.addEventListener("click", () => setRemapActiveTarget("to"));
-  addRemapBtn.addEventListener("click", handleAddOrSaveRemap);
-  cancelRemapEditBtn.addEventListener("click", cancelRemapEdit);
+  remapsController = createRemapsController({
+    documentLike: document,
+    entries: remaps,
+    t,
+    escapeHtml,
+    getDistinguishSides: () => distinguishSides,
+    editableEntries: {
+      setup: setupEditableEntries,
+      setEditing: setEditingEntry,
+      clearEditing: clearEditingEntry,
+    },
+    animations: {
+      add: animateEntryAddition,
+      remove: animateEntryRemoval,
+      empty: animateEmptyState,
+    },
+    onChange: () => {
+      remapsController.render();
+      renderScriptPreview();
+      updateTabBadges();
+    },
+  });
 
   // Mode tabs
   modeTabs.forEach((tab) => {
@@ -1496,6 +727,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   initLanguage();
   updateModifierLabels();
 
+  hotkeysController.init();
+  hotstringsController.init();
+  remapsController.init();
   themeController.init();
   titlebarController.init();
 

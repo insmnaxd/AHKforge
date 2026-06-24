@@ -4,11 +4,6 @@ Planned features and ideas for future releases.
 
 See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
-## [1.0.0-alpha.4]
-
-- Phase three of refactoring; separate tabs, forms and lists from `main.js`.
-- Expanded round-trip tests of `Send`, `Run`, `URL` and `Command` options in `Hotkeys`.
-
 ## [1.0.0-alpha.5]
 
 - Phase four of refactoring; separate UI and bootstrap from `main.js`.

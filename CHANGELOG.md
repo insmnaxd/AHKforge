@@ -4,6 +4,13 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-alpha.4] - 2026-06-25
+
+### Changed
+
+- Phase three of refactoring; separate tabs, forms and lists from `main.js`.
+- Expanded round-trip tests of `Send`, `Run`, `URL` and `Command` options in `Hotkeys`.
+
 ## [1.0.0-alpha.3] - 2026-06-24
 
 ### Changed
