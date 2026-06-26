@@ -41,6 +41,13 @@ export function isTextEntryElement(element) {
 }
 
 export function shouldBlockKeyboardEvent(event) {
+  if (
+    event.ctrlKey &&
+    !event.altKey &&
+    event.key?.toLowerCase?.() === "f"
+  ) {
+    return true;
+  }
   if (event.key === "Tab") return true;
   if (isTextEntryElement(event.target)) return false;
   return Boolean(event.target?.closest?.(NON_TEXT_CONTROL_SELECTOR));
@@ -65,9 +72,15 @@ export function createMouseOnlyInteraction({
     event.stopPropagation();
   }
 
+  function handleContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   function init() {
     removeFromTabOrder(documentLike);
     documentLike.addEventListener("keydown", handleKeydown, true);
+    documentLike.addEventListener("contextmenu", handleContextMenu, true);
 
     const observer = new MutationObserverClass((mutations) => {
       mutations.forEach((mutation) => {
@@ -84,8 +97,9 @@ export function createMouseOnlyInteraction({
     return () => {
       observer.disconnect();
       documentLike.removeEventListener("keydown", handleKeydown, true);
+      documentLike.removeEventListener("contextmenu", handleContextMenu, true);
     };
   }
 
-  return { init, removeFromTabOrder, handleKeydown };
+  return { init, removeFromTabOrder, handleKeydown, handleContextMenu };
 }

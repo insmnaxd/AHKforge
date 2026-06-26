@@ -29,7 +29,7 @@
   "form.selectedHotkey": "Selected hotkey",
   "placeholder.selectedHotkey": "Click keys below to build a hotkey...",
   "capture.prompt": "Press a key or mouse button...",
-  "capture.instructions": "Click the field, press modifiers one by one, then press the final key. For mouse input, click the desired button or scroll inside the highlighted field. Click outside to cancel.",
+  "capture.instructions": "Alternatively: Click the field and press the keys on your keyboard. For mouse input, click the desired button or scroll inside the highlighted field.\nCaution: Windows key interferes with system shortcuts; use of on-screen keyboard recommended.",
   "button.clear": "Clear",
   "form.action": "Action",
   "action.send.option": "Send text",

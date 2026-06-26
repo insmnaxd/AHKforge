@@ -29,7 +29,7 @@
   "form.selectedHotkey": "Wybrany skrót",
   "placeholder.selectedHotkey": "Kliknij klawisze poniżej, aby zbudować skrót...",
   "capture.prompt": "Naciśnij klawisz lub przycisk myszy...",
-  "capture.instructions": "Kliknij pole, naciskaj modyfikatory po kolei, a następnie klawisz końcowy. Aby użyć myszy, kliknij wybranym przyciskiem lub przewiń kółkiem wewnątrz podświetlonego pola. Kliknij poza polem, aby anulować.",
+  "capture.instructions": "Alternatywnie: kliknij pole i wciśnij klawisze na klawiaturze. Aby użyć myszy, kliknij wybranym przyciskiem lub przewiń kółkiem wewnątrz podświetlonego pola.\nUwaga: klawisz Windows koliduje ze skrótami systemowymi; zalecana jest klawiatura ekranowa.",
   "button.clear": "Wyczyść",
   "form.action": "Akcja",
   "action.send.option": "Wyślij tekst",

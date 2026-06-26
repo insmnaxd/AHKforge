@@ -29,6 +29,7 @@ const KEY_CODES = {
   PrintScreen: "PrintScreen",
   ScrollLock: "ScrollLock",
   Pause: "Pause",
+  NumLock: "NumLock",
   Backquote: "`",
   Minus: "-",
   Equal: "=",
@@ -125,6 +126,7 @@ export function createInputCapture({
   const registrations = new Map();
   const selectedModifiers = new Set();
   let activeElement = null;
+  let pendingStart = null;
   let suppressNextClick = false;
 
   function isCaptureTrigger(target) {
@@ -140,7 +142,11 @@ export function createInputCapture({
   }
 
   function stop(completed = false) {
-    if (!activeElement) return;
+    pendingStart = null;
+    if (!activeElement) {
+      setNativeCaptureEnabled(false);
+      return;
+    }
     const element = activeElement;
     const registration = registrations.get(element);
     activeElement = null;
@@ -152,6 +158,18 @@ export function createInputCapture({
     registration?.onStateChange?.(false);
   }
 
+  function activate(element) {
+    if (pendingStart !== element) return;
+    pendingStart = null;
+    activeElement = element;
+    selectedModifiers.clear();
+    updateCaptureClass();
+    const registration = registrations.get(element);
+    registration?.onStart?.();
+    registration?.onStateChange?.(true);
+    registration?.onProgress?.({ modifiers: new Set() });
+  }
+
   function start(element) {
     if (activeElement === element) {
       stop();
@@ -159,14 +177,13 @@ export function createInputCapture({
     }
 
     if (activeElement) stop(true);
-    activeElement = element;
-    setNativeCaptureEnabled(true);
-    selectedModifiers.clear();
-    updateCaptureClass();
-    const registration = registrations.get(element);
-    registration?.onStart?.();
-    registration?.onStateChange?.(true);
-    registration?.onProgress?.({ modifiers: new Set() });
+    pendingStart = element;
+    const nativeReady = setNativeCaptureEnabled(true);
+    if (nativeReady && typeof nativeReady.then === "function") {
+      nativeReady.then(() => activate(element));
+    } else {
+      activate(element);
+    }
   }
 
   function finish(key, event) {
@@ -179,22 +196,29 @@ export function createInputCapture({
     registration.onComplete?.();
   }
 
+  function addModifier(modifier) {
+    if (modifier === "AltGr") {
+      selectedModifiers.delete("LCtrl");
+      selectedModifiers.delete("RCtrl");
+      selectedModifiers.delete("LAlt");
+      selectedModifiers.delete("RAlt");
+    }
+    selectedModifiers.add(modifier);
+  }
+
+  function removeModifier(modifier) {
+    selectedModifiers.delete(modifier);
+    if (modifier === "RAlt" || modifier === "AltGr") {
+      selectedModifiers.delete("AltGr");
+    }
+  }
+
   function handleKeydown(event) {
     if (!activeElement || event.repeat) return;
 
     const modifier = keyboardCodeToModifier(event.code, event);
     if (modifier) {
-      if (modifier === "AltGr") {
-        selectedModifiers.delete("LCtrl");
-        selectedModifiers.delete("RCtrl");
-        selectedModifiers.delete("LAlt");
-        selectedModifiers.delete("RAlt");
-      }
-      if (selectedModifiers.has(modifier)) {
-        selectedModifiers.delete(modifier);
-      } else {
-        selectedModifiers.add(modifier);
-      }
+      addModifier(modifier);
       registrations
         .get(activeElement)
         ?.onProgress?.({ modifiers: new Set(selectedModifiers) });
@@ -216,26 +240,66 @@ export function createInputCapture({
   }
 
   function handleKeyup(event) {
-    if (!activeElement || !keyboardCodeToModifier(event.code, event)) return;
+    if (!activeElement) return;
+    const modifier = keyboardCodeToModifier(event.code, event);
+    if (!modifier) return;
+    removeModifier(modifier);
+    registrations
+      .get(activeElement)
+      ?.onProgress?.({ modifiers: new Set(selectedModifiers) });
     event.preventDefault();
     event.stopImmediatePropagation();
   }
 
   function handleNativeModifier({ code, pressed }) {
-    if (!activeElement || !pressed) return;
+    if (!activeElement) return;
     const modifier = keyboardCodeToModifier(code, {
       getModifierState: () => false,
     });
     if (!modifier) return;
 
-    if (selectedModifiers.has(modifier)) {
-      selectedModifiers.delete(modifier);
+    if (pressed) {
+      addModifier(modifier);
     } else {
-      selectedModifiers.add(modifier);
+      removeModifier(modifier);
     }
     registrations
       .get(activeElement)
       ?.onProgress?.({ modifiers: new Set(selectedModifiers) });
+  }
+
+  function handleNativeKey({ code, pressed }) {
+    if (!activeElement) return;
+
+    const modifier = keyboardCodeToModifier(code, {
+      getModifierState: () => false,
+    });
+    if (modifier) {
+      if (pressed) {
+        addModifier(modifier);
+      } else {
+        removeModifier(modifier);
+      }
+      registrations
+        .get(activeElement)
+        ?.onProgress?.({ modifiers: new Set(selectedModifiers) });
+      return;
+    }
+
+    if (!pressed) return;
+    const registration = registrations.get(activeElement);
+    const key = keyboardCodeToAhkKey(
+      code,
+      registration.getLayoutMap?.() || {}
+    );
+    if (!key) return;
+
+    finish(key, {
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: false,
+      metaKey: false,
+    });
   }
 
   function handleMouseDown(event) {
@@ -291,7 +355,6 @@ export function createInputCapture({
     registrations.set(element, options);
     element.addEventListener("mousedown", (event) => {
       if (!activeElement) {
-        setNativeCaptureEnabled(true);
         event.preventDefault();
       }
     });
@@ -325,6 +388,7 @@ export function createInputCapture({
     register,
     stop,
     handleNativeModifier,
+    handleNativeKey,
     isCapturing: () => activeElement !== null,
   };
 }

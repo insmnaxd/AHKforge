@@ -4,10 +4,15 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
-## [1.0.0-alpha.6] - 2026-06-??
+## [1.0.0-alpha.6] - 2026-06-26
+
+### Added
+
+- Capture mode; physical keyboard and mouse buttons can now be used for input in `Hotkeys` and `Remapping`.
 
 ### Changed
 
+- Remade `Hotkeys` and `Remapping` key selection UX and UI to fit Capture mode.
 - Script header is now remade during import.
 - Unrecognized syntax and options are now skipped when importing a tampered .ahk file; the file is only rejected if nothing recognizable remains.
 

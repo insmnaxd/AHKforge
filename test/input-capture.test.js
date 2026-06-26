@@ -113,7 +113,7 @@ test("mouse wheel direction maps to AHK wheel names", () => {
   assert.equal(wheelEventToAhkKey({ deltaX: 2, deltaY: 1 }), "WheelRight");
 });
 
-test("capture remembers modifiers after they are released", () => {
+test("capture only includes modifiers held with the final key", () => {
   const harness = createCaptureHarness();
   const captured = [];
   const progress = [];
@@ -131,17 +131,17 @@ test("capture remembers modifiers after they are released", () => {
 
   assert.deepEqual(captured, [
     {
-      modifiers: new Set(["LCtrl"]),
+      modifiers: new Set(),
       key: "j",
     },
   ]);
   assert.deepEqual(progress.at(-1), {
-    modifiers: new Set(["LCtrl"]),
+    modifiers: new Set(),
   });
   assert.equal(capture.isCapturing(), false);
 });
 
-test("pressing a selected modifier again removes it", () => {
+test("held modifiers are included with the final key", () => {
   const harness = createCaptureHarness();
   const captured = [];
   const capture = createInputCapture({ documentLike: harness.documentLike });
@@ -152,11 +152,41 @@ test("pressing a selected modifier again removes it", () => {
 
   harness.clickElement();
   harness.dispatch("keydown", { code: "ControlLeft" });
-  harness.dispatch("keyup", { code: "ControlLeft" });
-  harness.dispatch("keydown", { code: "ControlLeft" });
-  harness.dispatch("keyup", { code: "ControlLeft" });
   harness.dispatch("keydown", { code: "KeyJ" });
 
+  assert.deepEqual(captured, [
+    {
+      modifiers: new Set(["LCtrl"]),
+      key: "j",
+    },
+  ]);
+});
+
+test("AltGr is released when AltRight keyup no longer reports AltGraph", () => {
+  const harness = createCaptureHarness();
+  const captured = [];
+  const progress = [];
+  const capture = createInputCapture({ documentLike: harness.documentLike });
+  capture.register(harness.element, {
+    onCapture: (value) => captured.push(value),
+    onProgress: (value) => progress.push(value),
+  });
+  capture.init();
+
+  harness.clickElement();
+  harness.dispatch("keydown", {
+    code: "AltRight",
+    getModifierState: (name) => name === "AltGraph",
+  });
+  harness.dispatch("keyup", {
+    code: "AltRight",
+    getModifierState: () => false,
+  });
+  harness.dispatch("keydown", { code: "KeyJ" });
+
+  assert.deepEqual(progress.at(-1), {
+    modifiers: new Set(),
+  });
   assert.deepEqual(captured, [
     {
       modifiers: new Set(),
@@ -339,7 +369,7 @@ test("completed capture can hand off directly to the next field", () => {
   assert.equal(second.classes.has("capturing-input"), true);
 });
 
-test("native Windows-key events behave like captured modifiers", () => {
+test("native key events behave like captured modifiers", () => {
   const harness = createCaptureHarness();
   const progress = [];
   const nativeCaptureStates = [];
@@ -354,10 +384,59 @@ test("native Windows-key events behave like captured modifiers", () => {
   capture.init();
 
   harness.clickElement();
-  capture.handleNativeModifier({ code: "MetaLeft", pressed: true });
-  capture.handleNativeModifier({ code: "MetaLeft", pressed: false });
+  capture.handleNativeKey({ code: "MetaLeft", pressed: true });
+  capture.handleNativeKey({ code: "MetaLeft", pressed: false });
   capture.stop();
 
-  assert.deepEqual(progress.at(-1), new Set(["LWin"]));
+  assert.deepEqual(progress.at(-1), new Set());
   assert.deepEqual(nativeCaptureStates, [true, false]);
+});
+
+test("native key events can complete system-level shortcuts", () => {
+  const harness = createCaptureHarness();
+  const captured = [];
+  const capture = createInputCapture({
+    documentLike: harness.documentLike,
+  });
+  capture.register(harness.element, {
+    onCapture: (value) => captured.push(value),
+  });
+  capture.init();
+
+  harness.clickElement();
+  capture.handleNativeKey({ code: "MetaLeft", pressed: true });
+  capture.handleNativeKey({ code: "KeyR", pressed: true });
+
+  assert.deepEqual(captured, [
+    {
+      modifiers: new Set(["LWin"]),
+      key: "r",
+    },
+  ]);
+  assert.equal(capture.isCapturing(), false);
+});
+
+test("capture waits for native key blocking before it becomes active", async () => {
+  const harness = createCaptureHarness();
+  let resolveNativeReady;
+  const nativeReady = new Promise((resolve) => {
+    resolveNativeReady = resolve;
+  });
+  const capture = createInputCapture({
+    documentLike: harness.documentLike,
+    setNativeCaptureEnabled: () => nativeReady,
+  });
+  capture.register(harness.element, {});
+  capture.init();
+
+  harness.clickElement();
+
+  assert.equal(capture.isCapturing(), false);
+  assert.equal(harness.classes.has("capturing-input"), false);
+
+  resolveNativeReady();
+  await Promise.resolve();
+
+  assert.equal(capture.isCapturing(), true);
+  assert.equal(harness.classes.has("capturing-input"), true);
 });

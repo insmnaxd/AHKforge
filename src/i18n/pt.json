@@ -29,7 +29,7 @@
   "form.selectedHotkey": "Atalho selecionado",
   "placeholder.selectedHotkey": "Clique nas teclas abaixo para criar um atalho...",
   "capture.prompt": "Prima uma tecla ou botão do rato...",
-  "capture.instructions": "Clique no campo, prima os modificadores um a um e depois a tecla final. Para usar o rato, clique ou desloque dentro do campo realçado. Clique fora para cancelar.",
+  "capture.instructions": "Alternativa: clique no campo e prima as teclas no teclado. Para o rato, clique no botão desejado ou desloque dentro do campo realçado.\nAtenção: a tecla Windows interfere com atalhos do sistema; recomenda-se o teclado no ecrã.",
   "button.clear": "Limpar",
   "form.action": "Ação",
   "action.send.option": "Enviar texto",

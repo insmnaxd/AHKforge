@@ -4,15 +4,10 @@ Planned features and ideas for future releases.
 
 See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
-## [1.0.0-alpha.6]
-
-- Capture mode; physical keyboard and mouse buttons can now be used for input in `Hotkeys` and `Remapping`.
-- Remade `Hotkeys` and `Remapping` key selection UX and UI to fit Capture mode.
-
 ## [1.0.0-alpha.7]
 
 - Expansion of keyboard GUI to resemble a full size keyboard.
-- Visual representation of a mouse and its buttons.
+- Visual representation of mouse and its buttons.
 
 ## [1.0.0-alpha.8]
 

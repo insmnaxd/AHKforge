@@ -29,7 +29,7 @@
   "form.selectedHotkey": "Raccourci sélectionné",
   "placeholder.selectedHotkey": "Cliquez sur les touches ci-dessous pour créer un raccourci...",
   "capture.prompt": "Appuyez sur une touche ou un bouton de souris...",
-  "capture.instructions": "Cliquez sur le champ, appuyez sur les modificateurs un par un, puis sur la touche finale. Pour la souris, cliquez ou faites défiler dans le champ surligné. Cliquez à l’extérieur pour annuler.",
+  "capture.instructions": "Alternative : cliquez sur le champ et appuyez sur les touches du clavier. Pour la souris, cliquez avec le bouton voulu ou faites défiler dans le champ surligné.\nAttention : la touche Windows interfère avec les raccourcis système ; clavier à l’écran recommandé.",
   "button.clear": "Effacer",
   "form.action": "Action",
   "action.send.option": "Envoyer du texte",

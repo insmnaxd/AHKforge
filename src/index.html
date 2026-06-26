@@ -108,7 +108,8 @@
               </button>
               <button id="clear-hotkey-btn" class="btn btn-secondary" data-i18n="button.clear">Clear</button>
             </div>
-            <p class="hint capture-hint" data-i18n="capture.instructions">Click the field, press modifiers one by one, then press the final key. For mouse input, click the desired button or scroll inside the highlighted field. Click outside to cancel.</p>
+            <p class="hint capture-hint" data-i18n="capture.instructions">Alternatively: Click the field and press the keys on your keyboard. For mouse input, click the desired button or scroll inside the highlighted field.
+Caution: Windows key interferes with system shortcuts; use of on-screen keyboard recommended.</p>
           </div>
 
           <div class="keyboard-settings">
@@ -333,23 +334,26 @@
         <section class="panel panel-wide mode-section hidden" id="mode-section-remap">
           <h2 id="remap-form-title" data-i18n="form.remap.new">New key remap</h2>
 
-          <div class="remap-target-row">
-            <div class="remap-target-col">
-              <label data-i18n="form.remap.from">From key</label>
-              <button type="button" class="remap-target-btn key-combination-display" id="remap-target-from" data-target="from" tabindex="-1">
-                <span id="remap-from-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
-              </button>
+          <div class="field-group remap-target-group">
+            <div class="remap-target-row">
+              <div class="remap-target-col">
+                <label data-i18n="form.remap.from">From key</label>
+                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-from" data-target="from" tabindex="-1">
+                  <span id="remap-from-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
+                </button>
+              </div>
+              <div class="remap-arrow">&rarr;</div>
+              <div class="remap-target-col">
+                <label data-i18n="form.remap.to">To key</label>
+                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-to" data-target="to" tabindex="-1">
+                  <span id="remap-to-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
+                </button>
+              </div>
+              <button id="clear-remap-btn" class="btn btn-secondary" data-i18n="button.clear">Clear</button>
             </div>
-            <div class="remap-arrow">&rarr;</div>
-            <div class="remap-target-col">
-              <label data-i18n="form.remap.to">To key</label>
-              <button type="button" class="remap-target-btn key-combination-display" id="remap-target-to" data-target="to" tabindex="-1">
-                <span id="remap-to-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
-              </button>
-            </div>
-            <button id="clear-remap-btn" class="btn btn-secondary" data-i18n="button.clear">Clear</button>
+            <p class="hint capture-hint" data-i18n="capture.instructions">Alternatively: Click the field and press the keys on your keyboard. For mouse input, click the desired button or scroll inside the highlighted field.
+Caution: Windows key interferes with system shortcuts; use of on-screen keyboard recommended.</p>
           </div>
-          <p class="hint capture-hint" data-i18n="capture.instructions">Click the field, press modifiers one by one, then press the final key. For mouse input, click the desired button or scroll inside the highlighted field. Click outside to cancel.</p>
 
           <div class="keyboard-settings">
             <label class="checkbox keyboard-distinguish-toggle">

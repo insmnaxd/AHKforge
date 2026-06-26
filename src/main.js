@@ -120,13 +120,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   const inputCapture = createInputCapture({
     documentLike: document,
     setNativeCaptureEnabled: (enabled) => {
-      core.invoke("set_windows_key_capture", { enabled }).catch((error) => {
-        console.warn("Could not toggle native Windows-key capture:", error);
-      });
+      return core
+        .invoke("set_windows_key_capture", { enabled })
+        .catch((error) => {
+          console.warn("Could not toggle native Windows-key capture:", error);
+        });
     },
   });
-  await tauriEvent.listen("native-windows-key", ({ payload }) => {
-    inputCapture.handleNativeModifier(payload);
+  await tauriEvent.listen("native-key", ({ payload }) => {
+    inputCapture.handleNativeKey(payload);
   });
   const mouseOnlyInteraction = createMouseOnlyInteraction({
     documentLike: document,

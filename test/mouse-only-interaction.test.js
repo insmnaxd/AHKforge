@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  createMouseOnlyInteraction,
   isTextEntryElement,
   shouldBlockKeyboardEvent,
 } from "../src/ui/mouse-only-interaction.js";
@@ -38,10 +39,63 @@ test("typing and cursor movement remain enabled in text fields", () => {
   assert.equal(shouldBlockKeyboardEvent({ key: "a", target: textarea }), false);
 });
 
+test("browser find shortcut is blocked even in text fields", () => {
+  const input = createElement({ selectorMatches: ["input"], type: "text" });
+
+  assert.equal(
+    shouldBlockKeyboardEvent({
+      key: "f",
+      ctrlKey: true,
+      altKey: false,
+      target: input,
+    }),
+    true
+  );
+  assert.equal(
+    shouldBlockKeyboardEvent({
+      key: "F",
+      ctrlKey: true,
+      altKey: false,
+      target: input,
+    }),
+    true
+  );
+  assert.equal(
+    shouldBlockKeyboardEvent({
+      key: "f",
+      ctrlKey: false,
+      altKey: false,
+      target: input,
+    }),
+    false
+  );
+});
+
 test("keyboard input is blocked for non-text controls", () => {
   const button = createElement({ closest: true });
   const select = createElement({ closest: true });
 
   assert.equal(shouldBlockKeyboardEvent({ key: "Enter", target: button }), true);
   assert.equal(shouldBlockKeyboardEvent({ key: "ArrowDown", target: select }), true);
+});
+
+test("context menu is disabled globally", () => {
+  const controller = createMouseOnlyInteraction({
+    documentLike: {},
+    MutationObserverClass: class {},
+  });
+  let prevented = false;
+  let stopped = false;
+
+  controller.handleContextMenu({
+    preventDefault: () => {
+      prevented = true;
+    },
+    stopPropagation: () => {
+      stopped = true;
+    },
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(stopped, true);
 });

@@ -104,7 +104,9 @@ export function createRemapsController({
       getDistinguishSides()
     );
     if (!modifierText && !key) {
-      display.textContent = fallback;
+      display.innerHTML = `<span class="combination-placeholder">${escapeHtml(
+        fallback
+      )}</span>`;
       return;
     }
 

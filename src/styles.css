@@ -846,6 +846,8 @@ textarea,
 
 .capture-hint {
   margin-top: 8px;
+  line-height: 1.35;
+  white-space: pre-line;
 }
 
 .keyboard {
@@ -1049,7 +1051,7 @@ textarea,
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .remap-target-col {
