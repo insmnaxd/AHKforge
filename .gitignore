@@ -9,7 +9,6 @@ pnpm-debug.log*
 dist/
 dist-ssr/
 build/
-scripts/
 
 # Environment variables
 .env
