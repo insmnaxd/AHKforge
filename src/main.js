@@ -17,7 +17,7 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-alpha.7";
+const AHKGEN_VERSION = "v1.0.0-alpha.8";
 
 const {
   fs,
@@ -215,6 +215,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     documentLike: document,
     appWindow: tauriWindow.getCurrentWindow(),
     t,
+    shouldConfirmClose: () => scriptWorkspace.hasUnsavedChanges(),
+    confirmClose: () =>
+      dialog.confirm(t("close.unsavedConfirmation"), {
+        title: "AHKgen",
+        kind: "warning",
+        okLabel: t("button.closeAnyway"),
+        cancelLabel: t("button.cancel"),
+      }),
   });
 
   distinguishSidesToggles.forEach((toggle) => {
@@ -239,7 +247,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     renderAll();
   });
   resetConfigButton.addEventListener("click", async () => {
-    if (!window.confirm(t("settings.resetConfirmation"))) return;
+    const confirmed = await dialog.confirm(t("settings.resetConfirmation"), {
+      title: "AHKgen",
+      kind: "warning",
+      okLabel: t("button.resetConfig"),
+      cancelLabel: t("button.cancel"),
+    });
+    if (!confirmed) return;
 
     resetConfigButton.disabled = true;
     settingsStatus.textContent = t("status.resettingConfig");

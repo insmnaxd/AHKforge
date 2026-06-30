@@ -780,20 +780,6 @@ textarea,
     grid-template-columns: 1fr;
   }
 
-  .settings-list {
-    width: 100%;
-  }
-
-  .settings-item {
-    align-items: stretch;
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .settings-select,
-  .settings-item .btn {
-    width: 100%;
-  }
 }
 
 /* --- Visual keyboard --- */
@@ -1099,6 +1085,18 @@ textarea,
 
 /* --- Settings --- */
 
+.settings-section + .settings-info-grid {
+  margin-top: 20px;
+}
+
+.settings-section-title,
+.settings-card h3 {
+  margin: 0 0 10px;
+  color: var(--text-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
 .settings-list {
   display: grid;
   gap: 10px;
@@ -1164,6 +1162,133 @@ textarea,
 
 .settings-select:focus {
   border-color: var(--accent);
+}
+
+.settings-info-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.85fr);
+  gap: 14px;
+}
+
+.settings-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+}
+
+.settings-card-intro,
+.about-description {
+  margin: -3px 0 12px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.manual-steps {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.manual-steps li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.manual-note,
+.about-requirement {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.about-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 12px;
+}
+
+.about-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.about-name {
+  display: block;
+  color: var(--text-heading);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.about-version {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.7rem;
+}
+
+.about-details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.about-details > div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.about-details dt {
+  color: var(--text-muted);
+}
+
+.about-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-main);
+  overflow-wrap: anywhere;
+}
+
+.about-repository {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 800px) {
+  .settings-list {
+    width: 100%;
+  }
+
+  .settings-item {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .settings-select,
+  .settings-item .btn {
+    width: 100%;
+  }
+
+  .settings-info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- Remap target picker --- */

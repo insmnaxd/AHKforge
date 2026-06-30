@@ -21,9 +21,19 @@ export function createScriptWorkspace({
   const preview = documentLike.querySelector("#script-preview");
   const status = documentLike.querySelector("#action-status");
   let statusTimeoutId = null;
+  let cleanScript = null;
 
   function render() {
     preview.value = buildFullScript({ version, ...entries });
+    if (cleanScript === null) cleanScript = preview.value;
+  }
+
+  function markClean() {
+    cleanScript = preview.value;
+  }
+
+  function hasUnsavedChanges() {
+    return cleanScript !== null && preview.value !== cleanScript;
   }
 
   function setStatus(message, isError = false, autoClear = true) {
@@ -64,6 +74,7 @@ export function createScriptWorkspace({
       if (!filePath) return;
 
       await fileSystem.writeTextFile(filePath, `\uFEFF${preview.value}`);
+      markClean();
       setStatus(t("status.saved", { path: filePath }));
     } catch (error) {
       setStatus(t("status.saveError", { error }), true);
@@ -78,6 +89,11 @@ export function createScriptWorkspace({
       });
       if (!filePath) return;
 
+      const canAdoptOpenedFile =
+        !hasUnsavedChanges() &&
+        entries.hotkeys.length === 0 &&
+        entries.hotstrings.length === 0 &&
+        entries.remaps.length === 0;
       const result = parseAhkScript(await fileSystem.readTextFile(filePath));
       if (!result.success) {
         setStatus(t(result.errorKey), true);
@@ -94,6 +110,7 @@ export function createScriptWorkspace({
 
       const summary = mergeParsedEntries(entries, result);
       onEntriesChanged();
+      if (canAdoptOpenedFile) markClean();
       setStatus(getImportStatus(summary, result.skippedCount, t), false, false);
     } catch (error) {
       setStatus(t("status.openError", { error }), true);
@@ -106,5 +123,5 @@ export function createScriptWorkspace({
     documentLike.querySelector("#open-file-btn").addEventListener("click", open);
   }
 
-  return { init, render, setStatus };
+  return { init, render, setStatus, markClean, hasUnsavedChanges };
 }

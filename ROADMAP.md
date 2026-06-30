@@ -4,11 +4,6 @@ Planned features and ideas for future releases.
 
 See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
-## [1.0.0-alpha.8]
-
-- Expand `Settings` tab with project information.
-- Proper documentation/user manual.
-
 ## [1.0.0-beta]
 
 - Verification and cleanup of all language files.

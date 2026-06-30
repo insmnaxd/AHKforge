@@ -4,11 +4,29 @@ const RESTORE_ICON =
   '<svg viewBox="0 0 10 10" width="10" height="10"><rect x="2.5" y="0.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1" /><rect x="0.5" y="2.5" width="7" height="7" fill="var(--bg)" stroke="currentColor" stroke-width="1" /></svg>';
 
 export function injectVersion(documentLike, version) {
-  const versionTag = documentLike.querySelector(".version-tag");
-  if (versionTag) versionTag.textContent = version;
+  documentLike.querySelectorAll(".version-tag").forEach((versionTag) => {
+    versionTag.textContent = version;
+  });
 }
 
-export function createTitlebarController({ documentLike, appWindow, t }) {
+export async function handleCloseRequested(
+  event,
+  { shouldConfirmClose = () => false, confirmClose = () => true } = {}
+) {
+  if (shouldConfirmClose() && !(await confirmClose())) {
+    event.preventDefault();
+    return false;
+  }
+  return true;
+}
+
+export function createTitlebarController({
+  documentLike,
+  appWindow,
+  t,
+  shouldConfirmClose,
+  confirmClose,
+}) {
   const titlebar = documentLike.querySelector(".titlebar");
   const minimizeButton = documentLike.querySelector("#titlebar-minimize");
   const maximizeButton = documentLike.querySelector("#titlebar-maximize");
@@ -34,6 +52,9 @@ export function createTitlebarController({ documentLike, appWindow, t }) {
     minimizeButton.addEventListener("click", () => appWindow.minimize());
     maximizeButton.addEventListener("click", () => appWindow.toggleMaximize());
     closeButton.addEventListener("click", () => appWindow.close());
+    appWindow.onCloseRequested((event) =>
+      handleCloseRequested(event, { shouldConfirmClose, confirmClose })
+    );
 
     appWindow.isMaximized().then(setMaximized);
     appWindow.onResized(() => {

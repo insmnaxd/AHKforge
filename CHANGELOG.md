@@ -4,6 +4,22 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-alpha.8] - 2026-07-01
+
+### Added
+
+- Warning before closing the application with unsaved script changes.
+- About section with project, version, author, license, and repository information.
+- Quick-start manual.
+
+### Changed
+
+- Corrected QWERTZ and AZERTY keyboard layouts.
+
+### Fixed
+
+- Rapidly removing multiple entries no longer risks deleting the wrong entry.
+
 ## [1.0.0-alpha.7] - 2026-06-30
 
 ### Added
@@ -14,6 +30,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
 - Improved rendering of keyboard scheme in `Hotkeys` and `Remapping`.
 - Expanded keyboard scheme to resemble a full-sized keyboard.
+- Adjusted default size of the application window.
 
 ## [1.0.0-alpha.6] - 2026-06-26
 

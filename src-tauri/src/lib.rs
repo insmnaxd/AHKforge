@@ -344,10 +344,10 @@ pub fn run() {
                 if let Ok(Some(monitor)) = window.current_monitor() {
                     let screen_size = monitor.size();
 
-                    // 40% width, 75% height of the screen the window opens on.
+                    // 60% width, 76% height of the screen the window opens on.
                     // Adjust these two factors if you want a different starting size.
                     let width_factor = 0.60;
-                    let height_factor = 0.75;
+                    let height_factor = 0.76;
 
                     let new_width = (screen_size.width as f64 * width_factor) as u32;
                     let new_height = (screen_size.height as f64 * height_factor) as u32;

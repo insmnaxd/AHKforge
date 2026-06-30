@@ -146,6 +146,13 @@ test("complete AHK script survives export and import", () => {
         sendMode: "Input",
         comment: "",
       },
+      {
+        prefix: "sc002",
+        actionType: "send",
+        actionValue: "Layout key",
+        sendMode: "Input",
+        comment: "Physical key",
+      },
     ],
     hotstrings: [
       {
@@ -172,6 +179,11 @@ test("complete AHK script survives export and import", () => {
         fromPrefix: "CapsLock",
         toPrefix: "Escape",
         comment: "Caps as Escape",
+      },
+      {
+        fromPrefix: "sc034",
+        toPrefix: "sc035",
+        comment: "Layout punctuation",
       },
     ],
   };

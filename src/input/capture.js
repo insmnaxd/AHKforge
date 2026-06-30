@@ -1,3 +1,5 @@
+import { resolveKeyboardLayoutKey } from "../keyboard/layouts.js";
+
 const MODIFIER_CODES = {
   ControlLeft: "LCtrl",
   ControlRight: "RCtrl",
@@ -71,11 +73,14 @@ const MOUSE_BUTTONS = {
 export function keyboardCodeToAhkKey(code, layoutMap = {}) {
   if (/^Key[A-Z]$/.test(code)) {
     const baseKey = code.slice(3).toLowerCase();
-    return layoutMap[baseKey] || baseKey;
+    return resolveKeyboardLayoutKey(baseKey, layoutMap);
   }
-  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  if (/^Digit[0-9]$/.test(code)) {
+    return resolveKeyboardLayoutKey(code.slice(5), layoutMap);
+  }
   if (/^F(?:[1-9]|1[0-9]|2[0-4])$/.test(code)) return code;
-  return KEY_CODES[code] || null;
+  const baseKey = KEY_CODES[code];
+  return baseKey ? resolveKeyboardLayoutKey(baseKey, layoutMap) : null;
 }
 
 export function keyboardCodeToModifier(code, event) {

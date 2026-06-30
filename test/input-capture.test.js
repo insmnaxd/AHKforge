@@ -8,6 +8,7 @@ import {
   mouseButtonToAhkKey,
   wheelEventToAhkKey,
 } from "../src/input/capture.js";
+import { getKeyboardLayoutMap } from "../src/keyboard/layouts.js";
 
 function createCaptureHarness() {
   const documentListeners = new Map();
@@ -72,6 +73,14 @@ test("keyboard codes map to AHK key names", () => {
   assert.equal(keyboardCodeToAhkKey("KeyA"), "a");
   assert.equal(keyboardCodeToAhkKey("KeyA", { a: "q" }), "q");
   assert.equal(keyboardCodeToAhkKey("Digit7"), "7");
+  assert.equal(
+    keyboardCodeToAhkKey("Digit1", getKeyboardLayoutMap("azerty")),
+    "sc002"
+  );
+  assert.equal(
+    keyboardCodeToAhkKey("Period", getKeyboardLayoutMap("azerty")),
+    "sc034"
+  );
   assert.equal(keyboardCodeToAhkKey("F12"), "F12");
   assert.equal(keyboardCodeToAhkKey("ArrowLeft"), "Left");
   assert.equal(keyboardCodeToAhkKey("PageDown"), "PgDn");

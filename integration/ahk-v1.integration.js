@@ -60,6 +60,13 @@ test(
           sendMode: "Input",
           comment: "Mouse button hotkey",
         },
+        {
+          prefix: "sc002",
+          actionType: "send",
+          actionValue: "Layout-specific key",
+          sendMode: "Input",
+          comment: "Physical key from a non-QWERTY layout",
+        },
       ],
       hotstrings: [
         {
@@ -110,6 +117,11 @@ test(
           fromPrefix: "WheelLeft",
           toPrefix: "WheelRight",
           comment: "Horizontal wheel remap",
+        },
+        {
+          fromPrefix: "sc034",
+          toPrefix: "sc035",
+          comment: "Layout-specific punctuation remap",
         },
       ],
     });

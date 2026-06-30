@@ -9,6 +9,8 @@ import {
   createHotkeyEntry,
   validateHotkeyEntry,
 } from "./model.js";
+import { applyKeyboardLayoutToButton } from "../keyboard/layouts.js";
+import { removeEntryByReference } from "../ui/entries.js";
 
 export function createHotkeysController({
   documentLike,
@@ -287,15 +289,16 @@ export function createHotkeysController({
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const index = Number.parseInt(button.dataset.index, 10);
+        const entry = entries[index];
         const removingLastEntry = entries.length === 1;
 
         animations.remove(
           button.closest(".hotkey-item"),
           () => {
-            entries.splice(index, 1);
+            if (!removeEntryByReference(entries, entry)) return;
             if (editingIndex !== null) cancelEdit();
             onChange();
-            if (removingLastEntry) animations.empty(elements.list);
+            if (entries.length === 0) animations.empty(elements.list);
           },
           removingLastEntry
         );
@@ -357,13 +360,7 @@ export function createHotkeysController({
     elements.keyboard
       .querySelectorAll(".kb-key:not(.kb-modifier)")
       .forEach((button) => {
-        const baseKey = button.dataset.baseKey || button.dataset.key;
-        if (!button.dataset.baseKey) button.dataset.baseKey = baseKey;
-        if (baseKey.length === 1 && /[a-z]/i.test(baseKey)) {
-          const mapped = map[baseKey] || baseKey;
-          button.dataset.key = mapped;
-          button.textContent = mapped.toUpperCase();
-        }
+        applyKeyboardLayoutToButton(button, map);
       });
   }
 

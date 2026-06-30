@@ -3,6 +3,7 @@ import {
   getHotstringOptionTags,
   validateHotstringEntry,
 } from "./model.js";
+import { removeEntryByReference } from "../ui/entries.js";
 
 export function createHotstringsController({
   documentLike,
@@ -151,15 +152,16 @@ export function createHotstringsController({
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         const index = Number.parseInt(button.dataset.index, 10);
+        const entry = entries[index];
         const removingLastEntry = entries.length === 1;
 
         animations.remove(
           button.closest(".hotkey-item"),
           () => {
-            entries.splice(index, 1);
+            if (!removeEntryByReference(entries, entry)) return;
             if (editingIndex !== null) cancelEdit();
             onChange();
-            if (removingLastEntry) animations.empty(elements.list);
+            if (entries.length === 0) animations.empty(elements.list);
           },
           removingLastEntry
         );

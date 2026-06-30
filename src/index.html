@@ -64,31 +64,76 @@
         <!-- SETTINGS -->
         <section class="panel panel-wide mode-section hidden" id="mode-section-settings">
           <h2 data-i18n="settings.title">Settings</h2>
-          <div class="settings-list">
-            <div class="settings-item">
-              <div>
-                <label for="language-select" class="settings-item-title" data-i18n="settings.language">Language</label>
-                <p class="settings-item-description" data-i18n="settings.languageDescription">Choose the application language.</p>
+          <div class="settings-section">
+            <h3 class="settings-section-title" data-i18n="settings.preferencesTitle">Preferences</h3>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div>
+                  <label for="language-select" class="settings-item-title" data-i18n="settings.language">Language</label>
+                  <p class="settings-item-description" data-i18n="settings.languageDescription">Choose the application language.</p>
+                </div>
+                <select id="language-select" class="settings-select">
+                  <option value="en" data-i18n="language.en">English</option>
+                  <option value="pl" data-i18n="language.pl">Polski</option>
+                  <option value="es" data-i18n="language.es">Español</option>
+                  <option value="de" data-i18n="language.de">Deutsch</option>
+                  <option value="fr" data-i18n="language.fr">Français</option>
+                  <option value="it" data-i18n="language.it">Italiano</option>
+                  <option value="pt" data-i18n="language.pt">Português</option>
+                </select>
               </div>
-              <select id="language-select" class="settings-select">
-                <option value="en" data-i18n="language.en">English</option>
-                <option value="pl" data-i18n="language.pl">Polski</option>
-                <option value="es" data-i18n="language.es">Español</option>
-                <option value="de" data-i18n="language.de">Deutsch</option>
-                <option value="fr" data-i18n="language.fr">Français</option>
-                <option value="it" data-i18n="language.it">Italiano</option>
-                <option value="pt" data-i18n="language.pt">Português</option>
-              </select>
-            </div>
-            <div class="settings-item settings-item-danger">
-              <div>
-                <span class="settings-item-title" data-i18n="settings.resetTitle">Reset configuration</span>
-                <p class="settings-item-description" data-i18n="settings.resetDescription">Delete the configuration file and restart the application.</p>
+              <div class="settings-item settings-item-danger">
+                <div>
+                  <span class="settings-item-title" data-i18n="settings.resetTitle">Reset configuration</span>
+                  <p class="settings-item-description" data-i18n="settings.resetDescription">Delete the configuration file and restart the application.</p>
+                </div>
+                <button type="button" id="reset-config-btn" class="btn btn-danger" data-i18n="button.resetConfig">Reset configuration</button>
               </div>
-              <button type="button" id="reset-config-btn" class="btn btn-danger" data-i18n="button.resetConfig">Reset configuration</button>
             </div>
+            <p id="settings-status" class="status-msg"></p>
           </div>
-          <p id="settings-status" class="status-msg"></p>
+
+          <div class="settings-info-grid">
+            <article class="settings-card manual-card">
+              <h3 data-i18n="manual.title">Quick start</h3>
+              <p class="settings-card-intro" data-i18n="manual.intro">Create a script in five short steps.</p>
+              <ol class="manual-steps">
+                <li data-i18n="manual.step.choose">Choose Hotkeys, Hotstrings, or Remapping at the top.</li>
+                <li data-i18n="manual.step.configure">Configure the entry. Select keys on screen or click the selection field and press them physically.</li>
+                <li data-i18n="manual.step.add">Add the entry. Click an item in the list later to edit it.</li>
+                <li data-i18n="manual.step.review">Review the generated code in Script preview.</li>
+                <li data-i18n="manual.step.export">Copy the code or save it as an .ahk file, then run it with AutoHotkey v1.</li>
+              </ol>
+              <p class="manual-note" data-i18n="manual.importNote">Use Open existing .ahk file to continue editing a script previously created by AHKgen.</p>
+            </article>
+
+            <article class="settings-card about-card">
+              <h3 data-i18n="about.title">About</h3>
+              <div class="about-brand">
+                <img class="about-logo" src="assets/ahkgen.png" alt="" />
+                <div>
+                  <strong class="about-name">AHKgen</strong>
+                  <span class="about-version version-tag"></span>
+                </div>
+              </div>
+              <p class="about-description" data-i18n="about.description">A local desktop generator for AutoHotkey v1 scripts.</p>
+              <dl class="about-details">
+                <div>
+                  <dt data-i18n="about.author">Author</dt>
+                  <dd>Aleksander Łysoń</dd>
+                </div>
+                <div>
+                  <dt data-i18n="about.license">License</dt>
+                  <dd>MIT</dd>
+                </div>
+                <div>
+                  <dt data-i18n="about.repository">Repository</dt>
+                  <dd class="about-repository">github.com/insmnaxd/AHKgen</dd>
+                </div>
+              </dl>
+              <p class="about-requirement" data-i18n="about.requirement">Generated scripts require AutoHotkey v1 to run.</p>
+            </article>
+          </div>
         </section>
 
         <!-- NEW HOTKEY FORM (Hotkeys mode) -->
