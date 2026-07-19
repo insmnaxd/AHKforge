@@ -24,8 +24,14 @@ function createElement({ language, src = "", text = "" } = {}) {
     focus() {
       this.focused = true;
     },
+    blur() {
+      this.focused = false;
+    },
     getAttribute(name) {
       return attributes.get(name);
+    },
+    removeAttribute(name) {
+      attributes.delete(name);
     },
     setAttribute(name, value) {
       attributes.set(name, value);
@@ -38,7 +44,7 @@ function createElement({ language, src = "", text = "" } = {}) {
   };
 }
 
-function createFixture() {
+function createFixture({ deferClose = false } = {}) {
   const options = [
     createElement({ language: "en", src: "flags/en.svg", text: "English" }),
     createElement({ language: "pl", src: "flags/pl.svg", text: "Polski" }),
@@ -52,6 +58,7 @@ function createFixture() {
   const documentListeners = new Map();
   const selectListeners = new Map();
   const dispatchedEvents = [];
+  const pendingCloseCallbacks = [];
   const elements = new Map([
     ["#language-picker", root],
     ["#language-picker-button", button],
@@ -86,7 +93,20 @@ function createFixture() {
     }
   }
 
-  const controller = createLanguagePicker({ documentLike, select, EventClass: FakeEvent });
+  const controller = createLanguagePicker({
+    documentLike,
+    select,
+    EventClass: FakeEvent,
+    setTimeoutFn(callback) {
+      if (deferClose) {
+        pendingCloseCallbacks.push(callback);
+        return pendingCloseCallbacks.length;
+      }
+      callback();
+      return null;
+    },
+    clearTimeoutFn() {},
+  });
   controller.init();
   return {
     controller,
@@ -98,6 +118,7 @@ function createFixture() {
     options,
     select,
     dispatchedEvents,
+    pendingCloseCallbacks,
   };
 }
 
@@ -132,7 +153,7 @@ test("language picker chooses a language and emits the native select change", ()
   assert.equal(fixture.dispatchedEvents[0].bubbles, true);
   assert.equal(fixture.currentLabel.textContent, "Deutsch");
   assert.equal(fixture.listbox.hidden, true);
-  assert.equal(fixture.button.focused, true);
+  assert.equal(fixture.button.focused, false);
 });
 
 test("language picker supports keyboard navigation and selection", () => {
@@ -142,6 +163,9 @@ test("language picker supports keyboard navigation and selection", () => {
   fixture.button.emit("keydown", openEvent);
   assert.equal(openEvent.defaultPrevented, true);
   assert.equal(fixture.listbox.hidden, false);
+  assert.equal(fixture.listbox.getAttribute("data-open"), "true");
+  assert.equal(fixture.listbox.getAttribute("aria-hidden"), "false");
+  assert.equal(fixture.button.getAttribute("aria-expanded"), "true");
   assert.equal(fixture.options[1].focused, true);
 
   const moveEvent = keyboardEvent("ArrowDown");
@@ -152,6 +176,7 @@ test("language picker supports keyboard navigation and selection", () => {
   fixture.options[2].emit("keydown", keyboardEvent("Enter"));
   assert.equal(fixture.select.value, "de");
   assert.equal(fixture.listbox.hidden, true);
+  assert.equal(fixture.button.focused, true);
 });
 
 test("language picker closes when focus leaves it", () => {
@@ -162,4 +187,30 @@ test("language picker closes when focus leaves it", () => {
 
   assert.equal(fixture.listbox.hidden, true);
   assert.equal(fixture.button.getAttribute("aria-expanded"), "false");
+});
+
+test("language picker remains rendered until its closing animation finishes", () => {
+  const fixture = createFixture({ deferClose: true });
+
+  fixture.button.emit("click");
+  fixture.button.emit("click");
+
+  assert.equal(fixture.listbox.hidden, false);
+  assert.equal(fixture.listbox.getAttribute("data-open"), undefined);
+  assert.equal(fixture.listbox.getAttribute("aria-hidden"), "true");
+  assert.equal(fixture.pendingCloseCallbacks.length, 1);
+
+  fixture.pendingCloseCallbacks[0]();
+  assert.equal(fixture.listbox.hidden, true);
+});
+
+test("language picker drops mouse focus when its button closes the list", () => {
+  const fixture = createFixture();
+
+  fixture.button.emit("click", { detail: 1 });
+  fixture.button.focused = true;
+  fixture.button.emit("click", { detail: 1 });
+
+  assert.equal(fixture.button.getAttribute("aria-expanded"), "false");
+  assert.equal(fixture.button.focused, false);
 });

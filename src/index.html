@@ -73,23 +73,23 @@
             <div class="settings-list">
               <div class="settings-item">
                 <div>
-                  <label for="language-picker-button" class="settings-item-title" data-i18n="settings.language">Language</label>
+                  <span id="settings-language-label" class="settings-item-title" data-i18n="settings.language">Language</span>
                   <p class="settings-item-description" data-i18n="settings.languageDescription">Choose the application language.</p>
                 </div>
-                <div class="language-picker" id="language-picker">
-                  <button type="button" id="language-picker-button" class="settings-select language-picker-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-picker-options">
+                <div class="select-picker language-picker" id="language-picker">
+                  <button type="button" id="language-picker-button" class="settings-select select-picker-button language-picker-button" aria-labelledby="settings-language-label language-picker-current-label" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-picker-options">
                     <img class="language-flag" id="language-picker-current-flag" src="assets/flags/en.svg" alt="" />
                     <span id="language-picker-current-label">English</span>
-                    <span class="language-picker-chevron" aria-hidden="true">▾</span>
+                    <span class="select-picker-chevron" aria-hidden="true">▾</span>
                   </button>
-                  <div class="language-picker-options" id="language-picker-options" role="listbox" hidden>
-                    <div class="language-picker-option" id="language-option-en" role="option" data-language="en" aria-selected="true" tabindex="-1"><img class="language-flag" src="assets/flags/en.svg" alt="" /><span data-i18n="language.en">English</span></div>
-                    <div class="language-picker-option" id="language-option-pl" role="option" data-language="pl" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pl.svg" alt="" /><span data-i18n="language.pl">Polski</span></div>
-                    <div class="language-picker-option" id="language-option-es" role="option" data-language="es" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/es.svg" alt="" /><span data-i18n="language.es">Español</span></div>
-                    <div class="language-picker-option" id="language-option-de" role="option" data-language="de" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/de.svg" alt="" /><span data-i18n="language.de">Deutsch</span></div>
-                    <div class="language-picker-option" id="language-option-fr" role="option" data-language="fr" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/fr.svg" alt="" /><span data-i18n="language.fr">Français</span></div>
-                    <div class="language-picker-option" id="language-option-it" role="option" data-language="it" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/it.svg" alt="" /><span data-i18n="language.it">Italiano</span></div>
-                    <div class="language-picker-option" id="language-option-pt" role="option" data-language="pt" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pt.svg" alt="" /><span data-i18n="language.pt">Português</span></div>
+                  <div class="select-picker-options" id="language-picker-options" role="listbox" aria-hidden="true" hidden>
+                    <div class="select-picker-option language-picker-option" id="language-option-en" role="option" data-language="en" aria-selected="true" tabindex="-1"><img class="language-flag" src="assets/flags/en.svg" alt="" /><span data-i18n="language.en">English</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-pl" role="option" data-language="pl" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pl.svg" alt="" /><span data-i18n="language.pl">Polski</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-es" role="option" data-language="es" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/es.svg" alt="" /><span data-i18n="language.es">Español</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-de" role="option" data-language="de" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/de.svg" alt="" /><span data-i18n="language.de">Deutsch</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-fr" role="option" data-language="fr" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/fr.svg" alt="" /><span data-i18n="language.fr">Français</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-it" role="option" data-language="it" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/it.svg" alt="" /><span data-i18n="language.it">Italiano</span></div>
+                    <div class="select-picker-option language-picker-option" id="language-option-pt" role="option" data-language="pt" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pt.svg" alt="" /><span data-i18n="language.pt">Português</span></div>
                   </div>
                   <select id="language-select" hidden tabindex="-1" aria-hidden="true">
                     <option value="en">English</option>
@@ -184,14 +184,25 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
               <input type="checkbox" class="distinguish-sides-toggle" />
               <span data-i18n="settings.distinguishSides">Distinguish left/right keys</span>
             </label>
-            <label class="keyboard-layout-group">
-              <span data-i18n="settings.keyboardLayout">Keyboard layout</span>
-              <select class="keyboard-layout-select">
-                <option value="qwerty">QWERTY</option>
-                <option value="qwertz">QWERTZ</option>
-                <option value="azerty">AZERTY</option>
-              </select>
-            </label>
+            <div class="keyboard-layout-group">
+              <span id="hotkey-keyboard-layout-label" data-i18n="settings.keyboardLayout">Keyboard layout</span>
+              <div class="select-picker keyboard-layout-picker">
+                <button type="button" class="select-picker-button keyboard-layout-picker-button" aria-labelledby="hotkey-keyboard-layout-label hotkey-keyboard-layout-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="hotkey-keyboard-layout-options">
+                  <span id="hotkey-keyboard-layout-current" class="keyboard-layout-current-label">QWERTY</span>
+                  <span class="select-picker-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div class="select-picker-options keyboard-layout-picker-options" id="hotkey-keyboard-layout-options" role="listbox" aria-hidden="true" hidden>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="qwerty" aria-selected="true" tabindex="-1">QWERTY</div>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="qwertz" aria-selected="false" tabindex="-1">QWERTZ</div>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="azerty" aria-selected="false" tabindex="-1">AZERTY</div>
+                </div>
+                <select class="keyboard-layout-select" hidden tabindex="-1" aria-hidden="true">
+                  <option value="qwerty">QWERTY</option>
+                  <option value="qwertz">QWERTZ</option>
+                  <option value="azerty">AZERTY</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Shared visual input picker is rendered by src/ui/visual-input.js. -->
@@ -212,9 +223,10 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <div class="action-value-row">
               <textarea
                 id="action-value"
+                class="auto-growing-textarea"
                 placeholder="Enter text..."
                 data-i18n-placeholder="action.send.placeholder"
-                rows="4"
+                rows="1"
               ></textarea>
               <button type="button" id="browse-file-btn" class="btn btn-secondary hidden" data-i18n="button.browse">Browse...</button>
             </div>
@@ -267,6 +279,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <label for="hotstring-replacement-input" data-i18n="form.hotstring.replacement">Replacement</label>
             <textarea
               id="hotstring-replacement-input"
+              class="auto-growing-textarea"
               rows="1"
               placeholder="e.g. by the way"
               data-i18n-placeholder="placeholder.hotstring.replacement"
@@ -343,14 +356,25 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
               <input type="checkbox" class="distinguish-sides-toggle" />
               <span data-i18n="settings.distinguishSides">Distinguish left/right keys (Ctrl, Shift, Alt, Win)</span>
             </label>
-            <label class="keyboard-layout-group">
-              <span data-i18n="settings.keyboardLayout">Keyboard layout</span>
-              <select class="keyboard-layout-select">
-                <option value="qwerty">QWERTY</option>
-                <option value="qwertz">QWERTZ</option>
-                <option value="azerty">AZERTY</option>
-              </select>
-            </label>
+            <div class="keyboard-layout-group">
+              <span id="remap-keyboard-layout-label" data-i18n="settings.keyboardLayout">Keyboard layout</span>
+              <div class="select-picker keyboard-layout-picker">
+                <button type="button" class="select-picker-button keyboard-layout-picker-button" aria-labelledby="remap-keyboard-layout-label remap-keyboard-layout-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="remap-keyboard-layout-options">
+                  <span id="remap-keyboard-layout-current" class="keyboard-layout-current-label">QWERTY</span>
+                  <span class="select-picker-chevron" aria-hidden="true">▾</span>
+                </button>
+                <div class="select-picker-options keyboard-layout-picker-options" id="remap-keyboard-layout-options" role="listbox" aria-hidden="true" hidden>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="qwerty" aria-selected="true" tabindex="-1">QWERTY</div>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="qwertz" aria-selected="false" tabindex="-1">QWERTZ</div>
+                  <div class="select-picker-option keyboard-layout-picker-option" role="option" data-keyboard-layout="azerty" aria-selected="false" tabindex="-1">AZERTY</div>
+                </div>
+                <select class="keyboard-layout-select" hidden tabindex="-1" aria-hidden="true">
+                  <option value="qwerty">QWERTY</option>
+                  <option value="qwertz">QWERTZ</option>
+                  <option value="azerty">AZERTY</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Shared visual input picker is rendered by src/ui/visual-input.js. -->

@@ -4,11 +4,27 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-beta.1] - 2026-07-19
+
+### Added
+
+- Animations for growing text fields, the language picker, the keyboard layout picker, and status messages.
+
+### Changed
+
+- `Hotstring` replacements and hotkey Send text fields now start at one line and grow with their content.
+- Keyboard layout selectors now use the same animated picker as the language setting.
+
+### Fixed
+
+- Kept the main window scrollbar hidden consistently across all languages while preserving scrolling.
+- Matched the `Hotstring` replacement scrollbar colors to the active theme.
+
 ## [1.0.0-beta.0] - 2026-07-19
 
 ### Added
 
-- Country flags next to languages in Settings.
+- Country flags next to languages in `Settings`.
 
 ### Changed
 
@@ -20,18 +36,21 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
 - AutoHotkey v2 generation, import, and real-interpreter validation.
 - AHK v1/v2 switch.
-- Content Security Policy for local assets and Tauri IPC.
 - Selective keyboard navigation and ARIA semantics for tabs, forms, lists, and status messages.
 
 ### Changed
 
 - AutoHotkey v2 is now selected by default on new installations.
-- The Hotstrings replacement field now grows automatically for multiline text.
+- The `Hotstrings` replacement field now grows automatically for multiline text.
 - Generated v1 scripts now declare AutoHotkey v1.1.33 or newer as a requirement.
 
 ### Fixed
 
 - Improved window and visual keyboard scaling across Windows DPI settings.
+
+### Security
+
+- Content Security Policy for local assets and Tauri IPC.
 
 ## [1.0.0-alpha.8] - 2026-06-30
 
@@ -53,12 +72,12 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
 ### Added
 
-- Mouse scheme.
+- Mouse layout.
 
 ### Changed
 
-- Improved rendering of keyboard scheme in `Hotkeys` and `Remapping`.
-- Expanded keyboard scheme to resemble a full-sized keyboard.
+- Improved rendering of keyboard layout in `Hotkeys` and `Remapping`.
+- Expanded keyboard layout to resemble a full-sized keyboard.
 - Adjusted default size of the application window.
 
 ## [1.0.0-alpha.6] - 2026-06-26

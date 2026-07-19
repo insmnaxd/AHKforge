@@ -10,6 +10,7 @@ import {
   validateHotkeyEntry,
 } from "./model.js";
 import { applyKeyboardLayoutToButton } from "../keyboard/layouts.js";
+import { createAutoResizeTextarea } from "../ui/auto-resize-textarea.js";
 import { removeEntryByReference } from "../ui/entries.js";
 
 export function createHotkeysController({
@@ -45,6 +46,7 @@ export function createHotkeysController({
   };
 
   let actionValue = documentLike.querySelector("#action-value");
+  let actionValueAutoResize = null;
   let selectedModifiers = new Set();
   let selectedKey = null;
   let editingIndex = null;
@@ -168,13 +170,18 @@ export function createHotkeysController({
       );
       newElement.id = "action-value";
       if (isSendText) {
-        newElement.rows = 4;
+        newElement.rows = 1;
+        newElement.className = "auto-growing-textarea";
       } else {
         newElement.type = "text";
       }
       newElement.value = oldValue;
       actionValue.replaceWith(newElement);
       actionValue = newElement;
+      actionValueAutoResize = isSendText
+        ? createAutoResizeTextarea(actionValue)
+        : null;
+      actionValueAutoResize?.init();
     }
 
     elements.actionValueLabel.textContent = t(config.labelKey);
@@ -185,6 +192,7 @@ export function createHotkeysController({
       elements.actionType.value !== "run"
     );
     elements.sendModeGroup.classList.toggle("hidden", !isSendText);
+    actionValueAutoResize?.resize();
   }
 
   function updateTranslations() {
@@ -205,6 +213,7 @@ export function createHotkeysController({
     elements.actionType.value = hotkey.actionType;
     updateActionFields();
     actionValue.value = hotkey.actionValue;
+    actionValueAutoResize?.resize();
     elements.sendModeToggle.checked = hotkey.sendMode === "Event";
     elements.comment.value = hotkey.comment || "";
 
@@ -221,6 +230,7 @@ export function createHotkeysController({
     elements.actionType.value = "send";
     updateActionFields();
     actionValue.value = "";
+    actionValueAutoResize?.resize();
     elements.sendModeToggle.checked = false;
     elements.comment.value = "";
     elements.cancelButton.classList.add("hidden");
@@ -338,6 +348,7 @@ export function createHotkeysController({
       addedIndex = entries.length - 1;
       clearSelection();
       actionValue.value = "";
+      actionValueAutoResize?.resize();
       elements.sendModeToggle.checked = false;
       elements.comment.value = "";
     }
@@ -428,6 +439,10 @@ export function createHotkeysController({
     elements.cancelButton.addEventListener("click", cancelEdit);
     elements.actionType.addEventListener("change", updateActionFields);
     elements.browseButton.addEventListener("click", browse);
+    if (actionValue.tagName === "TEXTAREA" && !actionValueAutoResize) {
+      actionValueAutoResize = createAutoResizeTextarea(actionValue);
+      actionValueAutoResize.init();
+    }
     updateTranslations();
     updateDisplay();
   }

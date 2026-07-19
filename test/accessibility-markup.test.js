@@ -17,3 +17,14 @@ test("header switches stay mouse-accessible but outside sequential Tab navigatio
     assert.match(input, /\btabindex="-1"/);
   }
 });
+
+test("language picker is labelled without making the surrounding text clickable", async () => {
+  const htmlUrl = new URL("../src/index.html", import.meta.url);
+  const html = await readFile(htmlUrl, "utf8");
+
+  assert.doesNotMatch(html, /<label\b[^>]*\bfor="language-picker-button"/);
+  assert.match(
+    html,
+    /<button\b[^>]*\bid="language-picker-button"[^>]*\baria-labelledby="settings-language-label language-picker-current-label"/
+  );
+});

@@ -11,6 +11,7 @@ import { createRemapsController } from "./remaps/controller.js";
 import { createEntryListUi } from "./ui/entry-list.js";
 import { createAhkVersionController } from "./ui/ahk-version.js";
 import { escapeHtml } from "./ui/html.js";
+import { createKeyboardLayoutPickers } from "./ui/keyboard-layout-picker.js";
 import { createLanguagePicker } from "./ui/language-picker.js";
 import { createModesController } from "./ui/modes.js";
 import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
@@ -19,7 +20,7 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-beta.0";
+const AHKGEN_VERSION = "v1.0.0-beta.1";
 
 const {
   fs,
@@ -112,6 +113,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   const keyboardLayoutSelects = document.querySelectorAll(
     ".keyboard-layout-select"
   );
+  const keyboardLayoutPickerController = createKeyboardLayoutPickers({
+    documentLike: document,
+  });
   const distinguishSidesToggles = document.querySelectorAll(
     ".distinguish-sides-toggle"
   );
@@ -255,6 +259,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       keyboardLayoutSelects.forEach((layoutSelect) => {
         layoutSelect.value = layout;
       });
+      keyboardLayoutPickerController.sync();
       applyKeyboardLayout(layout);
       userConfigStore.update({ keyboardLayout: layout });
       hotkeysController.clearSelection();
@@ -301,6 +306,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   keyboardLayoutSelects.forEach((select) => {
     select.value = savedLayout;
   });
+  keyboardLayoutPickerController.sync();
   applyKeyboardLayout(savedLayout);
 
   const language =
@@ -316,6 +322,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   scriptWorkspace.init();
   ahkVersionController.init();
   languagePickerController.init();
+  keyboardLayoutPickerController.init();
   themeController.init();
   titlebarController.init();
   inputCapture.init();

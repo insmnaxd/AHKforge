@@ -1,6 +1,6 @@
 [package]
 name = "AHKgen"
-version = "1.0.0-beta.0"
+version = "1.0.0-beta.1"
 description = "Simple script generator for AutoHotkey v1 and v2"
 authors = ["Aleksander Łysoń"]
 license = "MIT"
@@ -32,3 +32,8 @@ windows-sys = { version = "0.59", features = [
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_WindowsAndMessaging",
 ] }
+
+# Temporary upstream security patch. Remove this override after a
+# wayland-scanner release containing quick-xml >= 0.41 is published.
+[patch.crates-io]
+wayland-scanner = { git = "https://github.com/Smithay/wayland-rs", rev = "d07c4f91f28b42e5a485823ffd9d8d5a210b1053" }
