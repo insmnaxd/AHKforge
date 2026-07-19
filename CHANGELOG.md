@@ -4,6 +4,14 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0] - 2026-07-19
+
+First stable release of AHKforge.
+
+### Fixed
+
+- Corrected the .msi installer.
+
 ## [1.0.0-rc.0] - 2026-07-19
 
 ### Added

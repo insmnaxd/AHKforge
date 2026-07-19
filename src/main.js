@@ -21,7 +21,7 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKFORGE_VERSION = "v1.0.0-rc.0";
+const AHKFORGE_VERSION = "v1.0.0";
 
 const {
   fs,

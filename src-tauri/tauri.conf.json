@@ -32,7 +32,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["msi", "nsis"],
     "publisher": "Aleksander Łysoń",
     "copyright": "Copyright © 2026 Aleksander Łysoń",
     "license": "MIT",
@@ -40,6 +40,16 @@
     "homepage": "https://github.com/insmnaxd/AHKforge",
     "shortDescription": "AutoHotkey v1 and v2 script generator",
     "longDescription": "A local desktop generator for AutoHotkey v1 and v2 hotkeys, hotstrings, and remaps.",
+    "windows": {
+      "wix": {
+        "template": "./wix/main.wxs",
+        "language": {
+          "en-US": {
+            "localePath": "./wix/en-US.wxl"
+          }
+        }
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

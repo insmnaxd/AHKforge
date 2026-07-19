@@ -1,6 +1,6 @@
 [package]
 name = "AHKforge"
-version = "1.0.0-rc.0"
+version = "1.0.0"
 description = "Simple script generator for AutoHotkey v1 and v2"
 authors = ["Aleksander Łysoń"]
 license = "MIT"

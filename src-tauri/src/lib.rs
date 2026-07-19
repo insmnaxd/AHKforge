@@ -1,7 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
 const TARGET_WINDOW_WIDTH: f64 = 1200.0;
@@ -272,13 +272,17 @@ struct UserConfig {
     ahk_version: Option<String>,
 }
 
+fn user_config_path_in(config_dir: &Path) -> PathBuf {
+    config_dir.join("AHKforge").join("config.json")
+}
+
 fn user_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     let config_dir = app
         .path()
-        .app_config_dir()
+        .config_dir()
         .map_err(|err| format!("Could not resolve app config directory: {err}"))?;
 
-    Ok(config_dir.join("config.json"))
+    Ok(user_config_path_in(&config_dir))
 }
 
 #[tauri::command]
@@ -389,7 +393,18 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::initial_window_size;
+    use super::{initial_window_size, user_config_path_in};
+    use std::path::Path;
+
+    #[test]
+    fn stores_user_config_in_the_ahkforge_directory() {
+        let config_root = Path::new("config-root");
+
+        assert_eq!(
+            user_config_path_in(config_root),
+            config_root.join("AHKforge").join("config.json")
+        );
+    }
 
     #[test]
     fn keeps_the_target_logical_size_at_1080p_and_100_percent() {
